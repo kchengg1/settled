@@ -1,11 +1,11 @@
 {
   "artboards": [
-    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Receipt summary" },
-    { "file": "Assign.dc.html", "x": 470, "y": 0, "w": 390, "h": 844, "title": "Assign items" },
-    { "file": "Balances.dc.html", "x": 940, "y": 0, "w": 390, "h": 844, "title": "Trip settle-up" }
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 812, "title": "Receipt summary" },
+    { "file": "Assign.dc.html", "x": 470, "y": 0, "w": 390, "h": 812, "title": "Assign items" },
+    { "file": "Balances.dc.html", "x": 940, "y": 0, "w": 390, "h": 812, "title": "Trip settle-up" }
   ],
   "annotations": [
-    { "id": "note-direction", "x": 0, "y": -96, "w": 560, "text": "Warm & friendly direction — rounded type, soft cards, big confident numbers, and the teal→blue brand on the payoff moments. Person colors carry through as avatars. Same data as the app today." }
+    { "id": "note-direction", "x": 0, "y": -92, "w": 560, "text": "Revised: cooler and tighter. Neutral palette with a single blue accent; green/red only for owes / gets-back. Muted avatars instead of a rainbow, denser cards, cleaner type." }
   ],
   "launch": { "view": "canvas" }
 }

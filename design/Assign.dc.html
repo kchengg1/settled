@@ -8,117 +8,110 @@
 <x-dc>
 <helmet>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-    body { margin: 0; font-family: 'Nunito', -apple-system, "SF Pro Rounded", system-ui, sans-serif;
-           background: #F5F4EF; color: #26262B; -webkit-font-smoothing: antialiased; }
-    a { color: #2F6BFF; } a:hover { color: #1e50cc; }
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+    body { margin: 0; font-family: 'Manrope', -apple-system, system-ui, sans-serif;
+           background: #F1F2F4; color: #1B1D21; -webkit-font-smoothing: antialiased; }
+    a { color: #2C5FE0; } a:hover { color: #1f47ad; }
   </style>
 </helmet>
 
-<div style="min-height: 844px; background: #F5F4EF; display: flex; flex-direction: column;">
+<div style="min-height: 812px; background: #F1F2F4; display: flex; flex-direction: column;">
 
-  <div style="height: 54px;"></div>
+  <div style="height: 50px;"></div>
 
-  <!-- nav -->
-  <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 18px 10px;">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#26262B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-    <div style="font-size: 17px; font-weight: 800;">Assign items</div>
-    <div style="width: 22px;"></div>
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 16px 8px;">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#1B1D21" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    <div style="font-size: 16px; font-weight: 700;">Assign items</div>
+    <div style="width: 21px;"></div>
   </div>
 
   <!-- people chips -->
-  <div style="display: flex; gap: 9px; padding: 4px 18px 6px; overflow: hidden;">
-    <div style="display: flex; align-items: center; gap: 7px; padding: 7px 13px 7px 7px; border-radius: 999px; background: #2F6BFF; box-shadow: 0 6px 14px rgba(47,107,255,0.30);">
-      <div style="width: 28px; height: 28px; border-radius: 50%; background: #fff; color: #2F6BFF; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center;">AL</div>
-      <span style="font-size: 14px; font-weight: 800; color: #fff;">Alex</span>
+  <div style="display: flex; gap: 8px; padding: 2px 16px 4px; overflow: hidden;">
+    <div style="display: flex; align-items: center; gap: 6px; padding: 5px 11px 5px 5px; border-radius: 999px; background: #2C5FE0;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.22); color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center;">AL</div>
+      <span style="font-size: 13px; font-weight: 700; color: #fff;">Alex</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 7px; padding: 7px 13px 7px 7px; border-radius: 999px; background: #FFFFFF; border: 1px solid #ECEAE3;">
-      <div style="width: 28px; height: 28px; border-radius: 50%; background: #F5811E; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center;">SA</div>
-      <span style="font-size: 14px; font-weight: 700; color: #26262B;">Sam</span>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 5px 11px 5px 5px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E3E5EA;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; background: #667085; color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center;">SA</div>
+      <span style="font-size: 13px; font-weight: 600; color: #3A3F47;">Sam</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 7px; padding: 7px 13px 7px 7px; border-radius: 999px; background: #FFFFFF; border: 1px solid #ECEAE3;">
-      <div style="width: 28px; height: 28px; border-radius: 50%; background: #2FB56A; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center;">JO</div>
-      <span style="font-size: 14px; font-weight: 700; color: #26262B;">Jordan</span>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 5px 11px 5px 5px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E3E5EA;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; background: #2E9C8E; color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center;">JO</div>
+      <span style="font-size: 13px; font-weight: 600; color: #3A3F47;">Jordan</span>
     </div>
   </div>
 
-  <div style="font-size: 13px; font-weight: 700; color: #8E8E98; padding: 4px 20px 10px;">Tap items to add them for <span style="color: #2F6BFF; font-weight: 800;">Alex</span></div>
+  <div style="font-size: 12.5px; font-weight: 600; color: #868C95; padding: 4px 16px 8px;">Tap items to add them for <span style="color: #2C5FE0; font-weight: 700;">Alex</span></div>
 
-  <!-- items -->
-  <div style="display: flex; flex-direction: column; gap: 11px; padding: 0 18px; flex-grow: 1;">
+  <div style="display: flex; flex-direction: column; gap: 8px; padding: 0 16px; flex-grow: 1;">
 
-    <!-- assigned to selected -->
-    <div style="display: flex; align-items: center; gap: 13px; background: #FFFFFF; border-radius: 18px; padding: 14px 15px; box-shadow: 0 4px 12px rgba(30,30,40,0.05);">
-      <div style="width: 26px; height: 26px; border-radius: 50%; background: #2F6BFF; display: flex; align-items: center; justify-content: center;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+    <div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E9EBEF; border-radius: 13px; padding: 11px 14px;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; background: #2C5FE0; display: flex; align-items: center; justify-content: center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>
       </div>
-      <div style="display: flex; flex-direction: column;">
-        <div style="font-size: 16px; font-weight: 800;">Cheeseburger</div>
-        <div style="font-size: 13px; font-weight: 700; color: #8E8E98;">$14.50</div>
+      <div style="display: flex; flex-direction: column; gap: 1px;">
+        <div style="font-size: 15px; font-weight: 700;">Cheeseburger</div>
+        <div style="font-size: 12.5px; font-weight: 500; color: #868C95;">$14.50</div>
       </div>
       <div style="margin-left: auto; display: flex;">
-        <div style="width: 30px; height: 30px; border-radius: 50%; background: #2F6BFF; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">AL</div>
+        <div style="width: 27px; height: 27px; border-radius: 50%; background: #3B6FE0; color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">AL</div>
       </div>
     </div>
 
-    <!-- shared, includes selected -->
-    <div style="display: flex; align-items: center; gap: 13px; background: #FFFFFF; border-radius: 18px; padding: 14px 15px; box-shadow: 0 4px 12px rgba(30,30,40,0.05);">
-      <div style="width: 26px; height: 26px; border-radius: 50%; background: #2F6BFF; display: flex; align-items: center; justify-content: center;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+    <div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E9EBEF; border-radius: 13px; padding: 11px 14px;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; background: #2C5FE0; display: flex; align-items: center; justify-content: center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>
       </div>
-      <div style="display: flex; flex-direction: column;">
-        <div style="font-size: 16px; font-weight: 800;">Fries</div>
-        <div style="font-size: 13px; font-weight: 700; color: #8E8E98;">$6.50 · shared 2 ways</div>
+      <div style="display: flex; flex-direction: column; gap: 1px;">
+        <div style="font-size: 15px; font-weight: 700;">Fries</div>
+        <div style="font-size: 12.5px; font-weight: 500; color: #868C95;">$6.50 · shared 2 ways</div>
       </div>
       <div style="margin-left: auto; display: flex;">
-        <div style="width: 30px; height: 30px; border-radius: 50%; background: #2F6BFF; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">AL</div>
-        <div style="width: 30px; height: 30px; border-radius: 50%; background: #2FB56A; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; margin-left: -10px;">JO</div>
+        <div style="width: 27px; height: 27px; border-radius: 50%; background: #3B6FE0; color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">AL</div>
+        <div style="width: 27px; height: 27px; border-radius: 50%; background: #2E9C8E; color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; margin-left: -9px;">JO</div>
       </div>
     </div>
 
-    <!-- not selected's -->
-    <div style="display: flex; align-items: center; gap: 13px; background: #FFFFFF; border-radius: 18px; padding: 14px 15px; box-shadow: 0 4px 12px rgba(30,30,40,0.05);">
-      <div style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid #D8D6CE;"></div>
-      <div style="display: flex; flex-direction: column;">
-        <div style="font-size: 16px; font-weight: 800;">Tiramisu</div>
-        <div style="font-size: 13px; font-weight: 700; color: #8E8E98;">$9.00 · shared 3 ways</div>
+    <div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E9EBEF; border-radius: 13px; padding: 11px 14px;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #D3D6DC;"></div>
+      <div style="display: flex; flex-direction: column; gap: 1px;">
+        <div style="font-size: 15px; font-weight: 700;">Tiramisu</div>
+        <div style="font-size: 12.5px; font-weight: 500; color: #868C95;">$9.00 · shared 3 ways</div>
       </div>
       <div style="margin-left: auto; display: flex;">
-        <div style="width: 30px; height: 30px; border-radius: 50%; background: #F5811E; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">SA</div>
-        <div style="width: 30px; height: 30px; border-radius: 50%; background: #2FB56A; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; margin-left: -10px;">JO</div>
-        <div style="width: 30px; height: 30px; border-radius: 50%; background: #8B5CF6; color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; margin-left: -10px;">TA</div>
+        <div style="width: 27px; height: 27px; border-radius: 50%; background: #667085; color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">SA</div>
+        <div style="width: 27px; height: 27px; border-radius: 50%; background: #2E9C8E; color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; margin-left: -9px;">JO</div>
+        <div style="width: 27px; height: 27px; border-radius: 50%; background: #7A6FE0; color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; margin-left: -9px;">TA</div>
       </div>
     </div>
 
-    <!-- unassigned, highlighted -->
-    <div style="display: flex; align-items: center; gap: 13px; background: #FFF7DF; border-radius: 18px; padding: 14px 15px; border: 1.5px dashed #E8C765;">
-      <div style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid #E4B84A;"></div>
-      <div style="display: flex; flex-direction: column;">
-        <div style="font-size: 16px; font-weight: 800;">Negroni</div>
-        <div style="font-size: 13px; font-weight: 700; color: #B08A2E;">$12.00 · needs someone</div>
+    <!-- unassigned: quiet neutral emphasis, not warm -->
+    <div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1.5px solid #C9CDD4; border-radius: 13px; padding: 11px 14px;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #AEB3BB;"></div>
+      <div style="display: flex; flex-direction: column; gap: 1px;">
+        <div style="font-size: 15px; font-weight: 700;">Negroni</div>
+        <div style="font-size: 12.5px; font-weight: 500; color: #868C95;">$12.00</div>
       </div>
-      <div style="margin-left: auto; font-size: 12px; font-weight: 800; color: #B08A2E; background: #FBECBE; padding: 5px 10px; border-radius: 999px;">Unassigned</div>
+      <div style="margin-left: auto; font-size: 11.5px; font-weight: 700; color: #6B717A; background: #EEF0F3; padding: 4px 9px; border-radius: 999px;">Unassigned</div>
     </div>
 
   </div>
 
-  <!-- progress + next -->
-  <div style="padding: 14px 18px 0;">
-    <div style="text-align: center; font-size: 13px; font-weight: 700; color: #8E8E98; margin-bottom: 10px;">5 of 6 items assigned</div>
-    <div style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 18px; background: linear-gradient(135deg, #12B3A6 0%, #2F6BFF 100%); color: #fff; font-size: 17px; font-weight: 800; box-shadow: 0 10px 22px rgba(47,107,255,0.28); opacity: 0.55;">
+  <div style="padding: 12px 16px 0;">
+    <div style="text-align: center; font-size: 12.5px; font-weight: 600; color: #868C95; margin-bottom: 9px;">5 of 6 items assigned</div>
+    <div style="display: flex; align-items: center; justify-content: center; height: 50px; border-radius: 14px; background: #2C5FE0; color: #fff; font-size: 15px; font-weight: 700; opacity: 0.5;">
       Next: Tip &amp; tax
     </div>
   </div>
 
-  <!-- tab bar -->
-  <div style="display: flex; background: #FFFFFF; border-top: 1px solid #ECEAE3; padding: 10px 0 22px; margin-top: 14px;">
-    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #2F6BFF;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>
-      <span style="font-size: 11px; font-weight: 800;">Receipt</span>
+  <div style="display: flex; background: #FFFFFF; border-top: 1px solid #E6E8EC; padding: 9px 0 20px; margin-top: 12px;">
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #2C5FE0;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#2C5FE0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>
+      <span style="font-size: 11px; font-weight: 700;">Receipt</span>
     </div>
-    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #B7B7BE;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B7B7BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5a2.1 2.1 0 0 0-3-3L13 8 4.8 6.2a1 1 0 0 0-.9 1.7l6.3 3.9-2.3 2.3H4.5a1 1 0 0 0-.8 1.6l2.5 2.9"/></svg>
-      <span style="font-size: 11px; font-weight: 700;">Trips</span>
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #A6ABB3;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#A6ABB3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5a2.1 2.1 0 0 0-3-3L13 8 4.8 6.2a1 1 0 0 0-.9 1.7l6.3 3.9-2.3 2.3H4.5a1 1 0 0 0-.8 1.6l2.5 2.9"/></svg>
+      <span style="font-size: 11px; font-weight: 600;">Trips</span>
     </div>
   </div>
 
