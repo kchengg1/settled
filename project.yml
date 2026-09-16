@@ -34,3 +34,35 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
+
+  SplitChecksUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - SplitChecksUITests
+    dependencies:
+      - target: SplitChecks
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.kchengg1.splitchecks.uitests
+        TEST_TARGET_NAME: SplitChecks
+        SWIFT_VERSION: "5.9"
+
+# Explicit scheme so the UI-test target is available to `xcodebuild test`
+# (screenshots) while the plain app build/archive is unchanged — the test
+# target only participates in the test action.
+schemes:
+  SplitChecks:
+    build:
+      targets:
+        SplitChecks: all
+        SplitChecksUITests: [test]
+    test:
+      targets:
+        - SplitChecksUITests
+    run:
+      config: Debug
+    archive:
+      config: Release
+

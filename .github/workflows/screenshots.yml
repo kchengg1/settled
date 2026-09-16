@@ -1,0 +1,61 @@
+name: Screenshots
+
+# On-demand: Actions → Screenshots → Run workflow. Produces App Store
+# screenshots at 6.9" (1290×2796) and uploads them as an artifact.
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    name: Capture App Store screenshots
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen
+
+      - name: Run screenshot UI test
+        run: |
+          xcodebuild test \
+            -project SplitChecks.xcodeproj -scheme SplitChecks \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max' \
+            -only-testing:SplitChecksUITests \
+            -resultBundlePath result.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Export screenshots from the result bundle
+        run: |
+          rm -rf raw final
+          xcrun xcresulttool export attachments --path result.xcresult --output-path raw
+          python3 - <<'PY'
+          import json, os, re, shutil
+          raw, final = "raw", "final"
+          os.makedirs(final, exist_ok=True)
+          manifest = os.path.join(raw, "manifest.json")
+          data = json.load(open(manifest)) if os.path.exists(manifest) else []
+          count = 0
+          for test in data:
+              for att in test.get("attachments", []):
+                  src = os.path.join(raw, att.get("exportedFileName", ""))
+                  if not os.path.isfile(src):
+                      continue
+                  label = att.get("suggestedHumanReadableName") or att.get("exportedFileName")
+                  name = re.sub(r"[^A-Za-z0-9_.-]", "_", label)
+                  if not name.lower().endswith(".png"):
+                      name += ".png"
+                  shutil.copy(src, os.path.join(final, name))
+                  count += 1
+          print(f"Exported {count} screenshots")
+          PY
+          ls -la final
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-store-screenshots
+          path: final/*.png
+          if-no-files-found: error

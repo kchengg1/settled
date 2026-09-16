@@ -5,12 +5,27 @@ import SplitChecksCore
 @main
 struct SplitChecksApp: App {
     @State private var model = BillFlowModel()
+    private let container: ModelContainer
+
+    init() {
+        let screenshots = DemoData.isScreenshotRun
+        // Screenshot runs use a throwaway in-memory store seeded with demo
+        // data; real launches use the persistent store as before.
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: screenshots)
+        let container = try! ModelContainer(for: SavedBill.self, SavedTrip.self,
+                                            configurations: configuration)
+        if screenshots {
+            DemoData.seed(into: container.mainContext)
+            _model = State(initialValue: DemoData.receiptModel())
+        }
+        self.container = container
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView(model: model)
         }
-        .modelContainer(for: [SavedBill.self, SavedTrip.self])
+        .modelContainer(container)
     }
 }
 
