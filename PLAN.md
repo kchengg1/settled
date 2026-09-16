@@ -112,7 +112,8 @@ Assignment  — lineItem →, person →, shareWeight (1 = full/even share)
 | 2 | **Scan & parse** | VisionKit scanner, Vision OCR, ReceiptParser + fixture tests, Review-items screen | ✅ Done |
 | 3 | **Assign & summarize** | People, assignment UI, tip/tax screen, summary + share sheet | ✅ Done |
 | 4 | **Polish** | History (SwiftData persistence), recent-diner suggestions, haptics, empty states, app icon | ✅ Done |
-| 5 | *(Optional later)* | iOS 26 Foundation-Models parsing, receipt-image attachment on shared summary, MultipeerConnectivity "pass the phone-less" mode, Venmo/deep-link handoff | — |
+| 5 | **Trips mode** | Trip model, multi-method expense splits, settlement engine with minimized settle-up, Trips tab | ✅ Done |
+| 6+ | **Splitwise-class expansion** | Friends, groups, recorded payments, multi-currency, activity feed, receipt ↔ group bridge, reports, file share + iCloud collaboration — see [EXPANSION_PLAN.md](EXPANSION_PLAN.md) | Planned |
 
 Milestone 1 first is deliberate: the math engine is the riskiest correctness surface and needs zero UI to verify, and manual entry means the app degrades gracefully whenever OCR disappoints.
 

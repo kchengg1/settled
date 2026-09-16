@@ -2,7 +2,7 @@
 
 Split a dinner bill from a photo of the receipt — fully on-device, no cloud, no accounts. See [PLAN.md](PLAN.md) for the full project plan.
 
-**Status: Milestones 1–4 complete.** The full loop from PLAN.md works: scan (VisionKit camera or photo import) → on-device OCR + parsing with low-confidence flags and a printed-subtotal checksum → people → assignment → tip & tax → exact per-person totals → share to the group chat → saved to local history (SwiftData). Names from past bills come back as one-tap suggestions. Remaining ideas live in PLAN.md's Milestone 5 (optional).
+**Status: Milestones 1–4 complete.** The full loop from PLAN.md works: scan (VisionKit camera or photo import) → on-device OCR + parsing with low-confidence flags and a printed-subtotal checksum → people → assignment → tip & tax → exact per-person totals → share to the group chat → saved to local history (SwiftData). Names from past bills come back as one-tap suggestions. The next phase — friends, groups, reimbursements, multi-currency, and device-to-device collaboration in the Splitwise mold — is planned in [EXPANSION_PLAN.md](EXPANSION_PLAN.md).
 
 ## Layout
 
