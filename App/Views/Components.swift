@@ -2,43 +2,37 @@ import SwiftUI
 import UIKit
 import SplitChecksCore
 
-/// Chip colors, indexed by `Person.colorIndex` (wraps around for big parties).
+/// Chip colors, indexed by `Person.colorIndex`. Delegates to the shared
+/// muted avatar palette so colors stay consistent app-wide.
 enum ChipPalette {
-    static let colors: [Color] = [.blue, .orange, .green, .purple, .pink, .teal, .indigo, .red]
-
     static func color(for person: Person) -> Color {
-        colors[person.colorIndex % colors.count]
+        Palette.avatar(person.colorIndex)
     }
 }
 
-/// A tappable person chip: colored circle with initials plus the name.
+/// A tappable person chip: muted avatar plus the name. Selected chips fill
+/// with the accent; unselected read as a quiet outlined card.
 struct PersonChip: View {
     let person: Person
     var isSelected: Bool = false
 
-    private var initials: String {
-        let parts = person.name.split(separator: " ").prefix(2)
-        return parts.map { String($0.prefix(1)).uppercased() }.joined()
-    }
-
     var body: some View {
         HStack(spacing: 6) {
-            Text(initials.isEmpty ? "?" : initials)
-                .font(.caption.bold())
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(ChipPalette.color(for: person), in: Circle())
+            Avatar(name: person.name, colorIndex: person.colorIndex, size: 26,
+                   ringColor: isSelected ? .white.opacity(0.3) : nil)
             Text(person.name)
-                .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(isSelected ? .white : Palette.ink)
                 .lineLimit(1)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.leading, 5)
+        .padding(.trailing, 11)
+        .padding(.vertical, 5)
         .background(
-            Capsule().fill(isSelected ? ChipPalette.color(for: person).opacity(0.2) : Color(uiColor: .systemGray6))
+            Capsule().fill(isSelected ? Palette.accent : Palette.card)
         )
         .overlay(
-            Capsule().strokeBorder(isSelected ? ChipPalette.color(for: person) : .clear, lineWidth: 2)
+            Capsule().strokeBorder(isSelected ? .clear : Palette.cardBorder, lineWidth: 1)
         )
         .accessibilityLabel(Text(person.name))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -50,14 +44,10 @@ struct AssigneeStack: View {
     let people: [Person]
 
     var body: some View {
-        HStack(spacing: -8) {
+        HStack(spacing: -9) {
             ForEach(people) { person in
-                Text(String(person.name.prefix(1)).uppercased())
-                    .font(.caption2.bold())
-                    .foregroundStyle(.white)
-                    .frame(width: 22, height: 22)
-                    .background(ChipPalette.color(for: person), in: Circle())
-                    .overlay(Circle().strokeBorder(Color(uiColor: .systemBackground), lineWidth: 1.5))
+                Avatar(name: String(person.name.prefix(1)), colorIndex: person.colorIndex,
+                       size: 27, ringColor: Palette.card)
             }
         }
         .accessibilityLabel(Text(people.map(\.name).joined(separator: ", ")))

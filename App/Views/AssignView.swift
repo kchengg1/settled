@@ -28,81 +28,105 @@ struct AssignView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 16)
                 .padding(.vertical, 8)
             }
-            .background(.bar)
 
-            List {
-                Section {
+            if let selectedPerson {
+                (Text("Tap items to add them for ")
+                 + Text(selectedPerson.name).foregroundColor(Palette.accent).bold())
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(Palette.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 6)
+            }
+
+            ScrollView {
+                VStack(spacing: 8) {
                     ForEach(model.items) { item in
-                        itemRow(item)
+                        itemCard(item)
                     }
-                } footer: {
-                    Text(selectedPerson == nil
-                         ? "Pick a person above, then tap their items. Tap an item with several people selected in turn to share it."
-                         : "Tapping toggles this item for \(selectedPerson!.name).")
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, 8)
             }
         }
+        .background(Palette.background.ignoresSafeArea())
         .navigationTitle("Assign items")
+        .navigationBarTitleDisplayMode(.inline)
         .sensoryFeedback(.impact(weight: .light), trigger: model.assignments.count)
         .onAppear {
             if selectedPersonID == nil { selectedPersonID = model.people.first?.id }
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 if assignedCount < model.items.count {
                     Text("\(assignedCount) of \(model.items.count) items assigned")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Palette.muted)
                 }
                 NavigationLink(value: BillStep.tipTax) {
-                    Text("Next: Tip & tax")
-                        .frame(maxWidth: .infinity)
+                    PrimaryButtonLabel(title: "Next: Tip & tax")
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
                 .disabled(assignedCount < model.items.count)
+                .opacity(assignedCount < model.items.count ? 0.5 : 1)
             }
-            .padding()
+            .padding(16)
             .background(.bar)
         }
     }
 
-    @ViewBuilder
-    private func itemRow(_ item: LineItem) -> some View {
+    private func itemCard(_ item: LineItem) -> some View {
         let assignees = model.assignees(of: item)
         let isForSelected = selectedPerson.map { model.isAssigned(item: item, to: $0) } ?? false
+        let unassigned = assignees.isEmpty
 
-        Button {
+        return Button {
             guard let person = selectedPerson else { return }
             model.toggleAssignment(item: item, person: person)
         } label: {
-            HStack {
+            HStack(spacing: 12) {
                 Image(systemName: isForSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isForSelected && selectedPerson != nil
-                                     ? ChipPalette.color(for: selectedPerson!)
-                                     : .secondary)
-                VStack(alignment: .leading, spacing: 2) {
+                    .font(.system(size: 22))
+                    .foregroundStyle(isForSelected ? Palette.accent : Palette.muted.opacity(0.5))
+                VStack(alignment: .leading, spacing: 1) {
                     Text(item.name)
-                        .foregroundStyle(.primary)
-                    if assignees.count > 1 {
-                        Text("Shared \(assignees.count) ways")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Palette.ink)
+                    Text(priceLine(item, assigneeCount: assignees.count))
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(Palette.muted)
                 }
                 Spacer()
-                AssigneeStack(people: assignees)
-                Text(Money.format(item.priceCents))
-                    .monospacedDigit()
-                    .foregroundStyle(.primary)
+                if unassigned {
+                    Text("Unassigned")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(Palette.muted)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Palette.hairline))
+                } else {
+                    AssigneeStack(people: assignees)
+                }
             }
+            .padding(12)
+            .frame(maxWidth: .infinity)
+            .background(Palette.card)
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .strokeBorder(unassigned ? Palette.muted.opacity(0.45) : Palette.cardBorder,
+                                  lineWidth: unassigned ? 1.5 : 1)
+            )
         }
-        .listRowBackground(
-            assignees.isEmpty ? Color.yellow.opacity(0.12) : nil
-        )
-        .accessibilityHint(Text(assignees.isEmpty ? "Unassigned" : "Assigned"))
+        .buttonStyle(.plain)
+        .accessibilityHint(Text(unassigned ? "Unassigned" : "Assigned"))
+    }
+
+    private func priceLine(_ item: LineItem, assigneeCount: Int) -> String {
+        let price = Money.format(item.priceCents)
+        return assigneeCount > 1 ? "\(price) · shared \(assigneeCount) ways" : price
     }
 }

@@ -48,6 +48,7 @@ struct RootView: View {
             }
             .tabItem { Label("Trips", systemImage: "airplane") }
         }
+        .tint(Palette.accent)
     }
 }
 

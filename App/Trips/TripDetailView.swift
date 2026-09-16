@@ -38,6 +38,7 @@ struct TripDetailView: View {
             case .people: peopleList
             }
         }
+        .background(Palette.background.ignoresSafeArea())
         .navigationTitle(trip.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -96,6 +97,7 @@ struct TripDetailView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
         }
     }
 
@@ -118,67 +120,102 @@ struct TripDetailView: View {
 
     private var balancesList: some View {
         let settlement = SettlementEngine.settlement(for: trip)
-        return List {
-            Section("Balances") {
-                if trip.expenses.isEmpty {
-                    Text("No expenses yet.").foregroundStyle(Color.secondary)
-                }
-                ForEach(settlement.balances) { balance in
-                    balanceRow(balance)
-                }
-            }
-
-            Section("Settle up") {
-                if settlement.transfers.isEmpty {
-                    settledUpLabel
-                } else {
-                    ForEach(settlement.transfers.indices, id: \.self) { index in
-                        transferRow(settlement.transfers[index])
+        return ScrollView {
+            VStack(spacing: 14) {
+                VStack(spacing: 8) {
+                    ForEach(settlement.balances) { balance in
+                        balanceCard(balance)
                     }
                 }
+                settleUpCard(settlement.transfers)
             }
+            .padding(16)
         }
+        .background(Palette.background.ignoresSafeArea())
     }
 
-    private func balanceRow(_ balance: Balance) -> some View {
-        HStack {
-            if let person = trip.people.first(where: { $0.id == balance.personID }) {
-                PersonChip(person: person)
-            }
+    private func balanceCard(_ balance: Balance) -> some View {
+        let person = trip.people.first { $0.id == balance.personID }
+        return HStack(spacing: 12) {
+            Avatar(name: person?.name ?? "?", colorIndex: person?.colorIndex ?? 0, size: 36)
+            Text(person?.name ?? "?")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Palette.ink)
             Spacer()
-            Text(balanceLabel(balance.cents))
-                .monospacedDigit()
-                .foregroundStyle(balanceColor(balance.cents))
+            if balance.cents == 0 {
+                Text("settled").font(.system(size: 14, weight: .medium)).foregroundStyle(Palette.muted)
+            } else {
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(balance.cents > 0 ? "gets back" : "owes")
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(Palette.muted)
+                    Text(Money.format(abs(balance.cents), currencyCode: trip.currencyCode))
+                        .font(.system(size: 16, weight: .bold))
+                        .monospacedDigit()
+                        .foregroundStyle(balance.cents > 0 ? Palette.positive : Palette.negative)
+                }
+            }
         }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .background(Palette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Palette.cardBorder, lineWidth: 1))
     }
 
-    private func transferRow(_ transfer: Transfer) -> some View {
-        HStack {
-            Text(name(transfer.fromID))
-            Image(systemName: "arrow.right").font(.caption).foregroundStyle(Color.secondary)
-            Text(name(transfer.toID))
+    @ViewBuilder
+    private func settleUpCard(_ transfers: [Transfer]) -> some View {
+        VStack(spacing: 0) {
+            if transfers.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: trip.expenses.isEmpty ? "tray" : "checkmark.seal.fill")
+                        .foregroundStyle(trip.expenses.isEmpty ? Palette.muted : Palette.positive)
+                    Text(trip.expenses.isEmpty ? "Nothing to settle yet" : "All settled up")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Palette.ink)
+                    Spacer()
+                }
+                .padding(14)
+            } else {
+                HStack(spacing: 7) {
+                    Image(systemName: "checkmark.seal.fill").foregroundStyle(Palette.positive)
+                    Text("Settle up in \(transfers.count) payment\(transfers.count == 1 ? "" : "s")")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Palette.ink)
+                    Spacer()
+                }
+                .padding(.horizontal, 14).padding(.top, 13).padding(.bottom, 9)
+
+                ForEach(Array(transfers.enumerated()), id: \.offset) { index, transfer in
+                    if index > 0 {
+                        Rectangle().fill(Palette.hairline).frame(height: 1).padding(.horizontal, 14)
+                    }
+                    settleRow(transfer)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(Palette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Palette.cardBorder, lineWidth: 1))
+    }
+
+    private func settleRow(_ transfer: Transfer) -> some View {
+        HStack(spacing: 9) {
+            Avatar(name: name(transfer.fromID), colorIndex: colorIndex(transfer.fromID), size: 27)
+            Text(name(transfer.fromID)).font(.system(size: 14, weight: .medium)).foregroundStyle(Palette.ink)
+            Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.muted)
+            Avatar(name: name(transfer.toID), colorIndex: colorIndex(transfer.toID), size: 27)
+            Text(name(transfer.toID)).font(.system(size: 14, weight: .medium)).foregroundStyle(Palette.ink)
             Spacer()
             Text(Money.format(transfer.cents, currencyCode: trip.currencyCode))
-                .monospacedDigit().fontWeight(.medium)
+                .font(.system(size: 15, weight: .bold)).monospacedDigit().foregroundStyle(Palette.ink)
         }
+        .padding(.horizontal, 14).padding(.vertical, 10)
     }
 
-    private var settledUpLabel: some View {
-        let empty = trip.expenses.isEmpty
-        return Label(empty ? "Nothing to settle yet" : "All settled up 🎉",
-                     systemImage: empty ? "tray" : "checkmark.seal.fill")
-            .foregroundStyle(empty ? Color.secondary : Color.green)
-    }
-
-    private func balanceColor(_ cents: Int) -> Color {
-        if cents == 0 { return .secondary }
-        return cents > 0 ? .green : .red
-    }
-
-    private func balanceLabel(_ cents: Int) -> String {
-        if cents == 0 { return "settled" }
-        let amount = Money.format(abs(cents), currencyCode: trip.currencyCode)
-        return cents > 0 ? "gets back \(amount)" : "owes \(amount)"
+    private func colorIndex(_ id: Person.ID) -> Int {
+        trip.people.first { $0.id == id }?.colorIndex ?? 0
     }
 
     // MARK: - People
@@ -217,6 +254,7 @@ struct TripDetailView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
     }
 
     private func addPerson() {
