@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+    body { margin: 0; font-family: 'Nunito', -apple-system, "SF Pro Rounded", system-ui, sans-serif;
+           background: #F5F4EF; color: #26262B; -webkit-font-smoothing: antialiased; }
+    a { color: #2F6BFF; } a:hover { color: #1e50cc; }
+  </style>
+</helmet>
+
+<div style="min-height: 844px; background: #F5F4EF; display: flex; flex-direction: column;">
+
+  <!-- status-bar breathing room (real OS bar renders here) -->
+  <div style="height: 54px;"></div>
+
+  <!-- nav -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 18px 8px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#26262B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    <div style="font-size: 17px; font-weight: 800;">Trattoria Roma</div>
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#26262B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/></svg>
+  </div>
+
+  <div style="padding: 8px 18px 0; display: flex; flex-direction: column; gap: 18px; flex-grow: 1;">
+
+    <!-- hero total -->
+    <div style="background: linear-gradient(135deg, #12B3A6 0%, #2F6BFF 100%); border-radius: 26px; padding: 22px 24px; color: #fff; box-shadow: 0 14px 30px rgba(47,107,255,0.25);">
+      <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.14em; opacity: 0.85;">TOTAL SPLIT</div>
+      <div style="font-size: 44px; font-weight: 900; letter-spacing: -0.02em; margin-top: 2px;">$54.61</div>
+      <div style="font-size: 14px; font-weight: 600; opacity: 0.9; margin-top: 2px;">4 people · tax &amp; tip included</div>
+    </div>
+
+    <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.06em; color: #8E8E98; text-transform: uppercase; margin: -2px 2px -6px;">Everyone's share</div>
+
+    <!-- person cards -->
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+
+      <div style="display: flex; align-items: center; gap: 14px; background: #FFFFFF; border-radius: 20px; padding: 14px 16px; box-shadow: 0 4px 14px rgba(30,30,40,0.05);">
+        <div style="width: 46px; height: 46px; border-radius: 50%; background: #2F6BFF; color: #fff; font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center;">AL</div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="font-size: 17px; font-weight: 800;">Alex</div>
+          <div style="font-size: 13px; font-weight: 600; color: #8E8E98;">Margherita · shared fries</div>
+        </div>
+        <div style="margin-left: auto; font-size: 21px; font-weight: 900;">$15.20</div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; background: #FFFFFF; border-radius: 20px; padding: 14px 16px; box-shadow: 0 4px 14px rgba(30,30,40,0.05);">
+        <div style="width: 46px; height: 46px; border-radius: 50%; background: #F5811E; color: #fff; font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center;">SA</div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="font-size: 17px; font-weight: 800;">Sam</div>
+          <div style="font-size: 13px; font-weight: 600; color: #8E8E98;">Carbonara · espresso</div>
+        </div>
+        <div style="margin-left: auto; font-size: 21px; font-weight: 900;">$12.85</div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; background: #FFFFFF; border-radius: 20px; padding: 14px 16px; box-shadow: 0 4px 14px rgba(30,30,40,0.05);">
+        <div style="width: 46px; height: 46px; border-radius: 50%; background: #2FB56A; color: #fff; font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center;">JO</div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="font-size: 17px; font-weight: 800;">Jordan</div>
+          <div style="font-size: 13px; font-weight: 600; color: #8E8E98;">Tiramisu · shared fries</div>
+        </div>
+        <div style="margin-left: auto; font-size: 21px; font-weight: 900;">$14.30</div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; background: #FFFFFF; border-radius: 20px; padding: 14px 16px; box-shadow: 0 4px 14px rgba(30,30,40,0.05);">
+        <div style="width: 46px; height: 46px; border-radius: 50%; background: #8B5CF6; color: #fff; font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center;">TA</div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="font-size: 17px; font-weight: 800;">Taylor</div>
+          <div style="font-size: 13px; font-weight: 600; color: #8E8E98;">Negroni · espresso</div>
+        </div>
+        <div style="margin-left: auto; font-size: 21px; font-weight: 900;">$12.26</div>
+      </div>
+
+    </div>
+
+    <div style="flex-grow: 1;"></div>
+
+    <!-- primary action -->
+    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 54px; border-radius: 18px; background: linear-gradient(135deg, #12B3A6 0%, #2F6BFF 100%); color: #fff; font-size: 17px; font-weight: 800; box-shadow: 0 10px 22px rgba(47,107,255,0.28);">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/></svg>
+      Share breakdown
+    </div>
+  </div>
+
+  <!-- tab bar -->
+  <div style="display: flex; background: #FFFFFF; border-top: 1px solid #ECEAE3; padding: 10px 0 22px;">
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #2F6BFF;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>
+      <span style="font-size: 11px; font-weight: 800;">Receipt</span>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #B7B7BE;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B7B7BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5a2.1 2.1 0 0 0-3-3L13 8 4.8 6.2a1 1 0 0 0-.9 1.7l6.3 3.9-2.3 2.3H4.5a1 1 0 0 0-.8 1.6l2.5 2.9"/></svg>
+      <span style="font-size: 11px; font-weight: 700;">Trips</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

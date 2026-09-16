@@ -11,3 +11,6 @@ Package.resolved
 
 # macOS
 .DS_Store
+
+# Generated design-canvas payload (regenerate from design/*.dc.html)
+design/split-the-bill-redesign.html
