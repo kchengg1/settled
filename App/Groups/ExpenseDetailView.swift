@@ -238,7 +238,7 @@ struct ItemizedBreakdownSections: View {
                     if share.tipCents != 0 { row("Tip", share.tipCents) }
                 } header: {
                     HStack {
-                        Text("\(namer.name(person.id))'s items")
+                        Text(namer.isMe(person.id) ? "Your items" : "\(person.name)'s items")
                         Spacer()
                         Text(Money.format(share.totalCents))
                             .monospacedDigit()
