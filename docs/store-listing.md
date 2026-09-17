@@ -61,6 +61,9 @@ Fast, fair, and quietly private. Split The Bill just does the math so dinner doe
 ---
 
 ## What's New  [for this version — 4000 max]
+• New Friends tab: what everyone owes you across all your groups, and settle up everything in one tap
+• Hand off to Venmo, PayPal, or Cash App with the amount prefilled; set a reminder to settle
+• Export a group as a spreadsheet, or a per-person reimbursement statement as PDF
 • Scan a receipt inside a group and it lands as an itemized expense — everyone owes exactly their dishes plus tax and tip
 • Add any saved bill to a group, matching diners to members
 • Expenses can have several payers, adjustments ("Sam +$5"), categories, notes, and a receipt photo

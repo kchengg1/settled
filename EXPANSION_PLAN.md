@@ -478,6 +478,19 @@ All six were confirmed as recommended (the bold option in each).
   and "Add to a group" is one tap from the summary or a saved bill. A bill remembers the
   group it went into (`SavedBill.groupID`).
 
+### Implementation notes from Milestone 9
+
+- Friend balances (`FriendLedger.balances`) follow each group's own settle-up mode, so the
+  Friends tab never disagrees with a group's Balances screen; "settle everything" records
+  one payment per group and currency in the direction of the debt.
+- Payment-app hand-offs are plain URL opens (`venmo://`, `paypal.me`, `cash.app`) with the
+  amount prefilled when there is a single currency; nothing is verified, the user records
+  the payment afterwards.
+- Reminders are local `UNUserNotificationCenter` requests on this phone only.
+- Reports: `GroupCSV` (one row per entry, one "owes" column per member) and `Statement`
+  (per-person lines and totals) live in the core package; the app renders the statement
+  to PDF with `ImageRenderer` and hands both to the system share sheet.
+
 ## 10. Risks
 
 | Risk | Mitigation |

@@ -16,7 +16,7 @@ enum DemoData {
     /// "Alex" is *me*, so the screens use "you" wording.
     static func seed(into context: ModelContext) {
         let alex = Person(name: "Alex", colorIndex: 0)
-        let sam = Person(name: "Sam", colorIndex: 1)
+        let sam = Person(name: "Sam", colorIndex: 1, handles: PaymentHandles(venmo: "sam-pays"))
         let jordan = Person(name: "Jordan", colorIndex: 2)
         let taylor = Person(name: "Taylor", colorIndex: 3)
         let robin = Person(name: "Robin", colorIndex: 4)

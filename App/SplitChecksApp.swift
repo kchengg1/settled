@@ -54,6 +54,11 @@ struct RootView: View {
             .tabItem { Label("Groups", systemImage: "person.3.fill") }
 
             NavigationStack {
+                FriendsView()
+            }
+            .tabItem { Label("Friends", systemImage: "person.2.fill") }
+
+            NavigationStack {
                 ActivityView()
             }
             .tabItem { Label("Activity", systemImage: "clock.fill") }

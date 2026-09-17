@@ -9,6 +9,7 @@ struct RecordPaymentView: View {
     let meID: Person.ID?
     let onSave: (Payment) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
     @State private var fromID: Person.ID
     @State private var toID: Person.ID
@@ -73,6 +74,21 @@ struct RecordPaymentView: View {
                     }
                     TextField("Note (optional)", text: $note)
                 }
+
+                if !handoffOptions.isEmpty {
+                    Section {
+                        ForEach(handoffOptions) { option in
+                            Button {
+                                method = option.method
+                                openURL(option.url)
+                            } label: {
+                                Label(option.title, systemImage: option.systemImage)
+                            }
+                        }
+                    } footer: {
+                        Text("Opens the app prefilled. Come back and tap Record once it's sent.")
+                    }
+                }
             }
             .navigationTitle(draft.existing == nil ? "Record payment" : "Edit payment")
             .navigationBarTitleDisplayMode(.inline)
@@ -83,6 +99,13 @@ struct RecordPaymentView: View {
                 }
             }
         }
+    }
+
+    /// Pay-with links when I'm the one paying and the payee has a handle.
+    private var handoffOptions: [PaymentHandoff.Option] {
+        guard fromID == meID, let payee = group.person(withID: toID) else { return [] }
+        return PaymentHandoff.options(for: payee.handles, cents: cents > 0 ? cents : nil,
+                                      currencyCode: currencyCode, note: group.name)
     }
 
     /// What the pairwise ledger says `from` owes `to` right now, if anything.

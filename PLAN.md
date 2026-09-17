@@ -116,7 +116,8 @@ Assignment  — lineItem →, person →, shareWeight (1 = full/even share)
 | 6 | **Foundation: people, groups, ledger** | People directory + *me*, groups with a kind, ledger of expenses and payments, pairwise vs. simplified settle-up, edit/delete/restore, activity feed — see [EXPANSION_PLAN.md](EXPANSION_PLAN.md) | ✅ Done |
 | 7 | **Rich expenses** | Multiple payers, adjustment split, per-expense currency with per-currency balances, manual conversion, categories, notes, receipt photos, recurring expenses, validator, expense detail screen | ✅ Done |
 | 8 | **Receipt ↔ group bridge** | Scan a receipt from inside a group and land it as an itemized expense; add a finished or saved bill to a group with diner → member matching; itemized expenses show per-person items and can reopen the receipt to regenerate the split | ✅ Done |
-| 9+ | **Splitwise-class expansion** | Friends + settle-up hand-offs, reports, file share + iCloud collaboration — see [EXPANSION_PLAN.md](EXPANSION_PLAN.md) | Planned |
+| 9 | **Friends, settle up, reports** | Friends tab with cross-group balances per currency, settle-everything in one tap, Venmo / PayPal / Cash App hand-offs, local reminders, CSV export, per-person PDF statements | ✅ Done |
+| 10+ | **Collaboration** | File share + merge, then iCloud shared groups — see [EXPANSION_PLAN.md](EXPANSION_PLAN.md) | Planned |
 
 Milestone 1 first is deliberate: the math engine is the riskiest correctness surface and needs zero UI to verify, and manual entry means the app degrades gracefully whenever OCR disappoints.
 

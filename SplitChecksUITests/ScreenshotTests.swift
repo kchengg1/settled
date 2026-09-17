@@ -59,6 +59,11 @@ final class ScreenshotTests: XCTestCase {
         capture("07-itemized-expense")
         app.navigationBars.buttons.firstMatch.tap()
 
+        // 7) Friends: what everyone owes you across groups.
+        app.tabBars.buttons["Friends"].tap()
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
+        capture("08-friends")
+
         // 5) The cross-group activity feed.
         app.tabBars.buttons["Activity"].tap()
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))

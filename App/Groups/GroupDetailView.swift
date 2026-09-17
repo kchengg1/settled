@@ -13,6 +13,7 @@ struct GroupDetailView: View {
     @State private var showingAddExpense = false
     @State private var editingExpense: Expense?
     @State private var receiptFlow: BillFlowModel?
+    @State private var exportFile: ExportFile?
     @State private var paymentDraft: PaymentDraft?
     @State private var showingMemberPicker = false
     @State private var showingRename = false
@@ -81,6 +82,9 @@ struct GroupDetailView: View {
         }
         .fullScreenCover(item: $receiptFlow) { model in
             ReceiptFlowSheet(model: model)
+        }
+        .sheet(item: $exportFile) { file in
+            ActivitySheet(items: [file.url])
         }
         .sheet(isPresented: $showingMemberPicker) {
             MemberPickerView(existingIDs: Set(group.people.map(\.id))) { people in
@@ -183,8 +187,30 @@ struct GroupDetailView: View {
                     }
                 }
                 Toggle("Simplify debts", isOn: simplifyBinding)
+                Divider()
+                Button {
+                    exportCSV()
+                } label: {
+                    Label("Export spreadsheet (CSV)", systemImage: "tablecells")
+                }
+                .disabled(group.liveEntries.isEmpty)
             } label: {
                 Label("More", systemImage: "ellipsis.circle")
+            }
+        }
+    }
+
+    private func exportCSV() {
+        if let url = Exports.write(GroupCSV.render(group), named: "\(group.name).csv") {
+            exportFile = ExportFile(url: url)
+        }
+    }
+
+    private func exportStatement(for person: Person) {
+        let statement = Statement.make(for: person.id, in: group)
+        Task { @MainActor in
+            if let url = StatementPDF.render(statement) {
+                exportFile = ExportFile(url: url)
             }
         }
     }
@@ -534,6 +560,13 @@ struct GroupDetailView: View {
                             Image(systemName: "lock.fill").font(.caption).foregroundStyle(.secondary)
                         }
                     }
+                    .contextMenu {
+                        Button {
+                            exportStatement(for: person)
+                        } label: {
+                            Label("Reimbursement statement (PDF)", systemImage: "doc.text")
+                        }
+                    }
                 }
                 .onDelete { offsets in
                     // `apply` refuses to remove anyone tied to an entry, so
@@ -543,7 +576,7 @@ struct GroupDetailView: View {
                     }
                 }
             } footer: {
-                Text("People in an expense or payment can't be removed. A lock marks them.")
+                Text("People in an expense or payment can't be removed. A lock marks them. Touch and hold a person for their reimbursement statement.")
             }
 
             Section {
