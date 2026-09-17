@@ -147,8 +147,12 @@ public enum SettlementEngine {
         let known = Set(group.people.map(\.id))
         return group.liveEntries.compactMap { (entry: LedgerEntry) -> Contribution? in
             switch entry {
-            case .expense(let expense): return contribution(for: expense, knownPeople: known)
-            case .payment(let payment): return contribution(for: payment, knownPeople: known)
+            case .expense(var expense):
+                // Entries built outside `apply` may still carry an empty currency.
+                if expense.currencyCode.isEmpty { expense.currencyCode = group.currencyCode }
+                return contribution(for: expense, knownPeople: known)
+            case .payment(let payment):
+                return contribution(for: payment, knownPeople: known)
             }
         }
     }

@@ -64,7 +64,11 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
     ) {
         self.init(id: id, name: name, kind: kind, currencyCode: currencyCode,
                   simplifyDebts: simplifyDebts, people: people,
-                  entries: expenses.map { .expense($0) }, createdAt: createdAt)
+                  entries: expenses.map { expense in
+                      var normalized = expense
+                      if normalized.currencyCode.isEmpty { normalized.currencyCode = currencyCode }
+                      return .expense(normalized)
+                  }, createdAt: createdAt)
     }
 
     // MARK: - Reading

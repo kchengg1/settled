@@ -548,6 +548,7 @@ struct GroupDetailView: View {
         case .shares: return "by shares"
         case .percentages: return "by percent"
         case .exactCents: return "exact amounts"
+        case .adjustment: return "with adjustments"
         }
     }
 
