@@ -12,7 +12,7 @@ struct SplitChecksApp: App {
         // Screenshot runs use a throwaway in-memory store seeded with demo
         // data; real launches use the persistent store as before.
         let configuration = ModelConfiguration(isStoredInMemoryOnly: screenshots)
-        let container = try! ModelContainer(for: SavedBill.self, SavedTrip.self,
+        let container = try! ModelContainer(for: SavedBill.self, SavedTrip.self, SavedPerson.self,
                                             configurations: configuration)
         if screenshots {
             DemoData.seed(into: container.mainContext)
@@ -29,11 +29,14 @@ struct SplitChecksApp: App {
     }
 }
 
-/// Two modes side by side: split a single receipt, or track a trip's shared
-/// expenses. Each is its own navigation stack so switching tabs preserves
-/// where you were.
+/// Four tabs, each its own navigation stack so switching preserves where
+/// you were: split a single receipt, track groups, see what changed, and
+/// settings (who you are, the people directory).
 struct RootView: View {
     @Bindable var model: BillFlowModel
+    @Environment(\.modelContext) private var context
+    @AppStorage(Me.onboardedKey) private var onboarded = false
+    @State private var showingOnboarding = false
 
     var body: some View {
         TabView {
@@ -44,9 +47,28 @@ struct RootView: View {
             .tabItem { Label("Receipt", systemImage: "doc.viewfinder") }
 
             NavigationStack {
-                TripsListView()
+                GroupsListView()
             }
-            .tabItem { Label("Trips", systemImage: "airplane") }
+            .tabItem { Label("Groups", systemImage: "person.3") }
+
+            NavigationStack {
+                ActivityView()
+            }
+            .tabItem { Label("Activity", systemImage: "clock") }
+
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem { Label("Settings", systemImage: "gearshape") }
+        }
+        .task {
+            PeopleDirectory.backfillIfNeeded(in: context)
+            if !onboarded { showingOnboarding = true }
+        }
+        // Dismissing by any route counts as "asked once"; Settings can
+        // always set it later.
+        .sheet(isPresented: $showingOnboarding, onDismiss: { onboarded = true }) {
+            MeOnboardingView()
         }
     }
 }

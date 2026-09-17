@@ -416,9 +416,9 @@ marketing story; 9 makes reimbursement real; 10 → 11 is the collaboration ladd
 
 ---
 
-## 9. Decisions to confirm before Milestone 6
+## 9. Decisions (confirmed 2026-09-17)
 
-These are judgment calls; the plan assumes the recommended option in bold.
+All six were confirmed as recommended (the bold option in each).
 
 1. **Rename Trips → Groups** in the UI? **Yes**: "Groups" with a kind is what users expect
    and what Splitwise imports look like. Keep the airplane icon for `kind: .trip`.
@@ -436,6 +436,20 @@ These are judgment calls; the plan assumes the recommended option in bold.
    ("Alex owes Sam"), so nothing breaks for a user who skips onboarding.
 
 ---
+
+### Implementation notes from Milestone 6
+
+- The core type is `ExpenseGroup`, not `Group`, to avoid clashing with SwiftUI's `Group`
+  view in the app target. `Trip` remains as a typealias.
+- The SwiftData entity keeps its on-disk name `SavedTrip`: renaming an entity is not a
+  lightweight migration, so the class stays and only gains defaulted columns. The
+  `VersionedSchema` plan in §4.4 is deferred until a change that lightweight migration
+  can't absorb; version-awareness lives in the JSON payload (`schemaVersion`) and the core
+  package's decoder, which is fixture-tested against the v1 shape.
+- *Me* is stored in `UserDefaults` (observed via `@AppStorage`) rather than a SwiftData row.
+- The one-time directory backfill dedupes historical people by name and keeps the most
+  recent ID; older groups stay internally consistent with their embedded copies.
+- Group settle-up for pre-existing trips migrates with `simplifyDebts: true` (decision 2).
 
 ## 10. Risks
 

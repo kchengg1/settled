@@ -82,6 +82,13 @@ final class BillFlowModel {
         people.append(Person(name: trimmed, colorIndex: people.count))
     }
 
+    /// Adds a directory person (stable ID across bills and groups).
+    /// Ignored if they're already on the bill.
+    func addPerson(_ person: Person) {
+        guard !people.contains(where: { $0.id == person.id }) else { return }
+        people.append(person)
+    }
+
     func removePerson(_ person: Person) {
         people.removeAll { $0.id == person.id }
         assignments.removeAll { $0.personID == person.id }

@@ -63,6 +63,7 @@ struct SummaryView: View {
         if let bill = try? SavedBill(snapshot: model.snapshot, merchantName: model.merchantName) {
             context.insert(bill)
         }
+        PeopleDirectory.register(model.people, in: context)
         saved = true
         model.startOver()
     }

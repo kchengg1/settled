@@ -1,0 +1,81 @@
+import SwiftUI
+import SwiftData
+import SplitChecksCore
+
+/// First-launch (and Settings) sheet: "What's your name?" Creates or picks
+/// the directory person that is *me*, so balances can say "you owe".
+/// Skipping is fine — everything works with neutral wording.
+struct MeOnboardingView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \SavedPerson.lastUsedAt, order: .reverse) private var people: [SavedPerson]
+    @AppStorage(Me.defaultsKey) private var meIDString = ""
+    @AppStorage(Me.onboardedKey) private var onboarded = false
+    @State private var name = ""
+    @FocusState private var nameFocused: Bool
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Your name", text: $name)
+                        .textContentType(.name)
+                        .focused($nameFocused)
+                        .submitLabel(.done)
+                        .onSubmit(save)
+                } header: {
+                    Text("What's your name?")
+                } footer: {
+                    Text("So the app can say \"you owe Sam\" instead of naming you. This stays on your phone.")
+                }
+
+                if !people.isEmpty {
+                    Section("Or pick yourself") {
+                        ForEach(people) { saved in
+                            Button {
+                                choose(saved)
+                            } label: {
+                                HStack {
+                                    PersonChip(person: saved.person)
+                                    Spacer()
+                                    if saved.id.uuidString == meIDString {
+                                        Image(systemName: "checkmark").foregroundStyle(.tint)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("This is you")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Not now") { finish() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Continue") { save() }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .onAppear { nameFocused = true }
+        }
+    }
+
+    private func save() {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        choose(PeopleDirectory.findOrCreate(named: trimmed, in: context))
+    }
+
+    private func choose(_ saved: SavedPerson) {
+        meIDString = saved.id.uuidString
+        finish()
+    }
+
+    private func finish() {
+        onboarded = true
+        dismiss()
+    }
+}

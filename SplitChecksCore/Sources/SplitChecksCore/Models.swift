@@ -1,15 +1,55 @@
 import Foundation
 
-/// A diner. Reusable across bills; `colorIndex` picks the chip color in the UI.
+/// Where a person can be paid back. All optional; used for settle-up
+/// hand-offs (deep links) and never for anything else.
+public struct PaymentHandles: Hashable, Codable, Sendable {
+    public var venmo: String?
+    public var paypal: String?
+    public var cashApp: String?
+    public var zelle: String?
+    public var phone: String?
+
+    public init(venmo: String? = nil, paypal: String? = nil, cashApp: String? = nil,
+                zelle: String? = nil, phone: String? = nil) {
+        self.venmo = venmo
+        self.paypal = paypal
+        self.cashApp = cashApp
+        self.zelle = zelle
+        self.phone = phone
+    }
+
+    public var isEmpty: Bool {
+        [venmo, paypal, cashApp, zelle, phone].allSatisfy { ($0 ?? "").isEmpty }
+    }
+}
+
+/// A diner / group member. The `id` is stable across bills and groups —
+/// the app keeps a people directory so "Sam" in two groups is one Sam —
+/// and `colorIndex` picks the chip color in the UI.
 public struct Person: Identifiable, Hashable, Codable, Sendable {
     public let id: UUID
     public var name: String
     public var colorIndex: Int
+    public var handles: PaymentHandles
 
-    public init(id: UUID = UUID(), name: String, colorIndex: Int = 0) {
+    public init(id: UUID = UUID(), name: String, colorIndex: Int = 0, handles: PaymentHandles = PaymentHandles()) {
         self.id = id
         self.name = name
         self.colorIndex = colorIndex
+        self.handles = handles
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, colorIndex, handles
+    }
+
+    /// Payloads written before `handles` existed decode with empty handles.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        colorIndex = try container.decode(Int.self, forKey: .colorIndex)
+        handles = try container.decodeIfPresent(PaymentHandles.self, forKey: .handles) ?? PaymentHandles()
     }
 }
 

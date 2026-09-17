@@ -11,33 +11,49 @@ enum DemoData {
         ProcessInfo.processInfo.arguments.contains("UITEST_SCREENSHOTS")
     }
 
-    /// A trip with balances worth showing, plus a lighter second trip so the
-    /// Trips list looks lived-in. Inserted so the richer trip sorts first.
+    /// A trip with balances, a recorded payment, and activity worth
+    /// showing, plus a lighter second group so the list looks lived-in.
+    /// "Alex" is *me*, so the screens use "you" wording.
     static func seed(into context: ModelContext) {
-        let taylor = Person(name: "Taylor", colorIndex: 3)
-        let robin = Person(name: "Robin", colorIndex: 4)
-        var tacos = Trip(name: "Taco Tuesday", people: [taylor, robin])
-        tacos.expenses = [
-            Expense(title: "Tacos & margs", payerID: taylor.id, amountCents: 4200,
-                    split: .equally(participantIDs: [taylor.id, robin.id]))
-        ]
-        context.insert(SavedTrip(trip: tacos))
-
         let alex = Person(name: "Alex", colorIndex: 0)
         let sam = Person(name: "Sam", colorIndex: 1)
         let jordan = Person(name: "Jordan", colorIndex: 2)
-        var lisbon = Trip(name: "Lisbon Trip", people: [alex, sam, jordan])
-        lisbon.expenses = [
-            Expense(title: "Seafood dinner", payerID: alex.id, amountCents: 12600,
-                    split: .equally(participantIDs: [alex.id, sam.id, jordan.id])),
-            Expense(title: "Airbnb", payerID: sam.id, amountCents: 42000,
-                    split: .equally(participantIDs: [alex.id, sam.id, jordan.id])),
-            Expense(title: "Tram tickets", payerID: jordan.id, amountCents: 1800,
-                    split: .equally(participantIDs: [alex.id, sam.id, jordan.id])),
-            Expense(title: "Pastéis de nata", payerID: alex.id, amountCents: 900,
-                    split: .equally(participantIDs: [alex.id, sam.id])),
+        let taylor = Person(name: "Taylor", colorIndex: 3)
+        let robin = Person(name: "Robin", colorIndex: 4)
+        for person in [alex, sam, jordan, taylor, robin] {
+            context.insert(SavedPerson(person: person))
+        }
+
+        let defaults = UserDefaults.standard
+        defaults.set(alex.id.uuidString, forKey: Me.defaultsKey)
+        defaults.set(true, forKey: Me.onboardedKey)
+        defaults.set(true, forKey: PeopleDirectory.backfilledKey)
+
+        let day: TimeInterval = 86_400
+        var tacos = ExpenseGroup(name: "Taco Tuesday", kind: .event, people: [alex, taylor, robin])
+        tacos.apply(.addEntry(.expense(Expense(title: "Tacos & margs", payerID: taylor.id, amountCents: 6300,
+                                               date: .now.addingTimeInterval(-3 * day),
+                                               split: .equally(participantIDs: [alex.id, taylor.id, robin.id])))),
+                    by: alex.id, at: .now.addingTimeInterval(-3 * day))
+        context.insert(SavedTrip(group: tacos))
+
+        var lisbon = ExpenseGroup(name: "Lisbon Trip", kind: .trip, people: [alex, sam, jordan])
+        let entries: [(LedgerEntry, TimeInterval)] = [
+            (.expense(Expense(title: "Airbnb", payerID: sam.id, amountCents: 42000, date: .now.addingTimeInterval(-6 * day),
+                              split: .equally(participantIDs: [alex.id, sam.id, jordan.id]))), -6 * day),
+            (.expense(Expense(title: "Seafood dinner", payerID: alex.id, amountCents: 12600, date: .now.addingTimeInterval(-5 * day),
+                              split: .equally(participantIDs: [alex.id, sam.id, jordan.id]))), -5 * day),
+            (.expense(Expense(title: "Tram tickets", payerID: jordan.id, amountCents: 1800, date: .now.addingTimeInterval(-4 * day),
+                              split: .equally(participantIDs: [alex.id, sam.id, jordan.id]))), -4 * day),
+            (.expense(Expense(title: "Pastéis de nata", payerID: alex.id, amountCents: 900, date: .now.addingTimeInterval(-2 * day),
+                              split: .equally(participantIDs: [alex.id, sam.id]))), -2 * day),
+            (.payment(Payment(fromID: jordan.id, toID: sam.id, cents: 5000, date: .now.addingTimeInterval(-1 * day),
+                              method: .venmo)), -1 * day),
         ]
-        context.insert(SavedTrip(trip: lisbon))
+        for (entry, offset) in entries {
+            lisbon.apply(.addEntry(entry), by: alex.id, at: .now.addingTimeInterval(offset))
+        }
+        context.insert(SavedTrip(group: lisbon))
     }
 
     /// A finished-looking receipt for the Receipt tab: items that sum to the

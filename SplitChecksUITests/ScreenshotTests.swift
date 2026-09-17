@@ -15,22 +15,28 @@ final class ScreenshotTests: XCTestCase {
         app.launch()
 
         // 1) Receipt tab (the default) showing a scanned, itemized bill.
-        XCTAssertTrue(app.tabBars.buttons["Trips"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.tabBars.buttons["Groups"].waitForExistence(timeout: 20))
         capture("01-receipt")
 
-        // 2) Trips list.
-        app.tabBars.buttons["Trips"].tap()
+        // 2) Groups list with the overall "you owe / you are owed" header.
+        app.tabBars.buttons["Groups"].tap()
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
-        capture("02-trips")
+        capture("02-groups")
 
-        // 3) A trip's expenses.
-        app.cells.firstMatch.tap()
+        // 3) A group's expenses and payments. The first cell is the overall
+        // balance header, so open the trip by name.
+        app.staticTexts["Lisbon Trip"].firstMatch.tap()
         XCTAssertTrue(app.buttons["Balances"].waitForExistence(timeout: 10))
         capture("03-expenses")
 
-        // 4) Balances and the minimized settle-up.
+        // 4) Balances and settle-up.
         app.buttons["Balances"].tap()
         capture("04-settle-up")
+
+        // 5) The cross-group activity feed.
+        app.tabBars.buttons["Activity"].tap()
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
+        capture("05-activity")
     }
 
     private func capture(_ name: String) {

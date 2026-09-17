@@ -113,7 +113,8 @@ Assignment  — lineItem →, person →, shareWeight (1 = full/even share)
 | 3 | **Assign & summarize** | People, assignment UI, tip/tax screen, summary + share sheet | ✅ Done |
 | 4 | **Polish** | History (SwiftData persistence), recent-diner suggestions, haptics, empty states, app icon | ✅ Done |
 | 5 | **Trips mode** | Trip model, multi-method expense splits, settlement engine with minimized settle-up, Trips tab | ✅ Done |
-| 6+ | **Splitwise-class expansion** | Friends, groups, recorded payments, multi-currency, activity feed, receipt ↔ group bridge, reports, file share + iCloud collaboration — see [EXPANSION_PLAN.md](EXPANSION_PLAN.md) | Planned |
+| 6 | **Foundation: people, groups, ledger** | People directory + *me*, groups with a kind, ledger of expenses and payments, pairwise vs. simplified settle-up, edit/delete/restore, activity feed — see [EXPANSION_PLAN.md](EXPANSION_PLAN.md) | ✅ Done |
+| 7+ | **Splitwise-class expansion** | Rich expenses, receipt ↔ group bridge, friends + settle-up hand-offs, reports, file share + iCloud collaboration — see [EXPANSION_PLAN.md](EXPANSION_PLAN.md) | Planned |
 
 Milestone 1 first is deliberate: the math engine is the riskiest correctness surface and needs zero UI to verify, and manual entry means the app degrades gracefully whenever OCR disappoints.
 
