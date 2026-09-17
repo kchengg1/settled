@@ -39,6 +39,16 @@ struct Namer {
         return isMe(balance.personID) ? "you owe \(amount)" : "owes \(amount)"
     }
 
+    /// For a row that already shows the person's name: "owe $12.00" after
+    /// "You", "owes $12.00" after "Sam".
+    func balanceVerbLabel(_ balance: Balance) -> String {
+        if balance.cents == 0 { return "settled up" }
+        let amount = Money.format(abs(balance.cents), currencyCode: group.currencyCode)
+        let me = isMe(balance.personID)
+        if balance.cents > 0 { return me ? "get back \(amount)" : "gets back \(amount)" }
+        return me ? "owe \(amount)" : "owes \(amount)"
+    }
+
     func transferLine(_ transfer: Transfer) -> String {
         let verb = isMe(transfer.fromID) ? "pay" : "pays"
         return "\(name(transfer.fromID)) \(verb) \(name(transfer.toID)) \(Money.format(transfer.cents, currencyCode: group.currencyCode))"

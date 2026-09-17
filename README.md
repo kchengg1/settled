@@ -4,6 +4,9 @@ Split a dinner bill from a photo of the receipt — fully on-device, no cloud, n
 
 **Status: Milestones 1–4 complete.** The full loop from PLAN.md works: scan (VisionKit camera or photo import) → on-device OCR + parsing with low-confidence flags and a printed-subtotal checksum → people → assignment → tip & tax → exact per-person totals → share to the group chat → saved to local history (SwiftData). Names from past bills come back as one-tap suggestions. The Splitwise-class expansion is under way per [EXPANSION_PLAN.md](EXPANSION_PLAN.md): Milestone 6 (people directory with *me*, groups, a ledger of expenses and recorded payments, pairwise or simplified settle-up, edit/delete/undo, and an activity feed) is in.
 
+Screenshots of the current build live in [`docs/screenshots/`](docs/screenshots/) (regenerate with the
+*Screenshots* workflow; tick "commit" to refresh them in the repo).
+
 ## Layout
 
 ```

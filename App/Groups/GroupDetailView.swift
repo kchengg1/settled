@@ -220,6 +220,7 @@ struct GroupDetailView: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .contentMargins(.top, 4, for: .scrollContent)
         }
     }
 
@@ -374,6 +375,7 @@ struct GroupDetailView: View {
             }
         }
         .scrollContentBackground(.hidden)
+            .contentMargins(.top, 4, for: .scrollContent)
     }
 
     private func balanceRow(_ balance: Balance, maxCents: Int) -> some View {
@@ -385,7 +387,7 @@ struct GroupDetailView: View {
                 Text(namer.name(balance.personID))
                     .font(.body.weight(.medium))
                 Spacer()
-                Text(namer.balanceLabel(balance))
+                Text(namer.balanceVerbLabel(balance))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.balanceColor(balance.cents))
@@ -459,6 +461,7 @@ struct GroupDetailView: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .contentMargins(.top, 4, for: .scrollContent)
         }
     }
 
@@ -513,6 +516,7 @@ struct GroupDetailView: View {
             }
         }
         .scrollContentBackground(.hidden)
+            .contentMargins(.top, 4, for: .scrollContent)
     }
 
     // MARK: - Helpers

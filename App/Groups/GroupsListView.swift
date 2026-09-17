@@ -75,14 +75,17 @@ struct GroupsListView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(saved.name)
                     .font(.cardTitle)
-                Text("\(saved.peopleCount) people · \(Money.format(saved.totalCents, currencyCode: group.currencyCode)) spent")
+                Text("\(saved.peopleCount) people · \(Money.format(saved.totalCents, currencyCode: group.currencyCode))")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
             Spacer(minLength: 8)
             if let myBalance {
                 StatusPill(text: Namer(group: group, meID: meID).balanceLabel(myBalance),
                            color: Theme.balanceColor(myBalance.cents))
+                    .fixedSize()
             }
         }
         .padding(.vertical, 4)
