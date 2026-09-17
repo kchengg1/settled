@@ -90,6 +90,7 @@ jobs:
         with:
           name: app-store-screenshots
           path: final/*.png
+          if-no-files-found: error
 
       # Opt-in: keep the captures in the repo (landing page, README, and
       # review from places that can't reach the artifact store).
@@ -108,4 +109,3 @@ jobs:
             git commit -m "Update app screenshots [skip ci]"
             git push
           fi
-          if-no-files-found: error
