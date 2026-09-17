@@ -18,11 +18,35 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen
 
+      # Runner images differ in which simulators they ship, so pick one
+      # that exists: the newest Pro Max if there is one, else any iPhone,
+      # installing the iOS platform first if there are none at all.
+      - name: Pick a simulator
+        id: sim
+        run: |
+          pick() {
+            xcrun simctl list devices available \
+              | grep -E '^[[:space:]]+iPhone' \
+              | { grep -i "$1" || true; } \
+              | tail -1 \
+              | sed -E 's/^[[:space:]]+(.*) \([0-9A-Fa-f-]+\) \(.*$/\1/'
+          }
+          NAME="$(pick 'Pro Max')"
+          [ -n "$NAME" ] || NAME="$(pick 'iPhone')"
+          if [ -z "$NAME" ]; then
+            echo "No iPhone simulators installed; downloading the iOS platform"
+            xcodebuild -downloadPlatform iOS
+            NAME="$(pick 'Pro Max')"
+            [ -n "$NAME" ] || NAME="$(pick 'iPhone')"
+          fi
+          echo "Using simulator: $NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
       - name: Run screenshot UI test
         run: |
           xcodebuild test \
             -project SplitChecks.xcodeproj -scheme SplitChecks \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max' \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.name }}" \
             -only-testing:SplitChecksUITests \
             -resultBundlePath result.xcresult \
             CODE_SIGNING_ALLOWED=NO
