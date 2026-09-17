@@ -466,6 +466,18 @@ All six were confirmed as recommended (the bold option in each).
 - Payload schema version is 3; version 2 (single `payerID`, no currency) decodes via a
   fixture-tested compatibility path.
 
+### Implementation notes from Milestone 8
+
+- An itemized expense stores its `BillSnapshot` and an `.exactCents` split derived from it
+  (`Expense.itemized(from:...)` / `applyItemizedBill`). Diner → member matching is a plain
+  ID mapping; with the people directory it is usually the identity.
+- The receipt flow is reused as-is: `BillFlowModel` gains a `GroupTarget`, so the same
+  screens end in "Add to <group>" (or "Update expense" when re-editing a receipt) instead
+  of saving to history.
+- The "Non-group expenses" pseudo-group was **not** built: standalone bills stay in History
+  and "Add to a group" is one tap from the summary or a saved bill. A bill remembers the
+  group it went into (`SavedBill.groupID`).
+
 ## 10. Risks
 
 | Risk | Mitigation |

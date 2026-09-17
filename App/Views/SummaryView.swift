@@ -8,11 +8,29 @@ struct SummaryView: View {
     @Environment(\.modelContext) private var context
     @State private var expandedPersonIDs: Set<Person.ID> = []
     @State private var saved = false
+    @State private var showingAddToGroup = false
+    @AppStorage(Me.defaultsKey) private var meIDString = ""
 
     var body: some View {
+        @Bindable var model = model
         let result = model.result
 
         List {
+            if let target = model.target {
+                Section {
+                    Picker("Who paid?", selection: Binding(
+                        get: { model.payerID ?? defaultPayerID },
+                        set: { model.payerID = $0 }
+                    )) {
+                        ForEach(model.people) { person in
+                            Text(person.id.uuidString == meIDString ? "You" : person.name).tag(Optional(person.id))
+                        }
+                    }
+                } footer: {
+                    Text("This receipt becomes an itemized expense in \(target.groupName); everyone's share is exactly their items plus tax and tip.")
+                }
+            }
+
             ForEach(result.shares) { share in
                 if let person = model.people.first(where: { $0.id == share.personID }) {
                     Section {
@@ -44,28 +62,71 @@ struct SummaryView: View {
         }
         .sensoryFeedback(.success, trigger: saved)
         .safeAreaInset(edge: .bottom) {
-            Button {
-                saveAndFinish()
-            } label: {
-                Text("Save & start a new bill")
-                    .frame(maxWidth: .infinity)
+            VStack(spacing: 8) {
+                if let target = model.target {
+                    Button {
+                        finishForGroup()
+                    } label: {
+                        Text(target.existingExpense == nil ? "Add to \(target.groupName)" : "Update expense")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(model.itemizedExpense() == nil)
+                } else {
+                    Button {
+                        saveAndFinish()
+                    } label: {
+                        Text("Save & start a new bill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    Button {
+                        showingAddToGroup = true
+                    } label: {
+                        Label("Add to a group", systemImage: "person.3")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
             .padding()
             .background(.bar)
         }
+        .sheet(isPresented: $showingAddToGroup) {
+            AddBillToGroupSheet(snapshot: model.snapshot, merchantName: model.merchantName) { savedGroup, _ in
+                saveAndFinish(groupID: savedGroup.id)
+            }
+        }
+    }
+
+    private var defaultPayerID: Person.ID? {
+        if let me = Me.parse(meIDString), model.people.contains(where: { $0.id == me }) { return me }
+        return model.people.first?.id
     }
 
     /// Saves the bill to history, then pops back to a fresh item-entry screen
     /// (startOver clears the navigation path).
-    private func saveAndFinish() {
+    private func saveAndFinish(groupID: UUID? = nil) {
         if let bill = try? SavedBill(snapshot: model.snapshot, merchantName: model.merchantName) {
+            bill.groupID = groupID
             context.insert(bill)
         }
         PeopleDirectory.register(model.people, in: context)
         saved = true
         model.startOver()
+    }
+
+    /// Group mode: hand the itemized expense back to the group that started
+    /// the flow. The group's handler dismisses the sheet.
+    private func finishForGroup() {
+        if model.payerID == nil { model.payerID = defaultPayerID }
+        guard let expense = model.itemizedExpense() else { return }
+        PeopleDirectory.register(model.people, in: context)
+        saved = true
+        model.onItemized?(expense)
     }
 
     @ViewBuilder

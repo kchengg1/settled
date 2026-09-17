@@ -12,6 +12,7 @@ struct GroupDetailView: View {
     @State private var mode: Mode = .expenses
     @State private var showingAddExpense = false
     @State private var editingExpense: Expense?
+    @State private var receiptFlow: BillFlowModel?
     @State private var paymentDraft: PaymentDraft?
     @State private var showingMemberPicker = false
     @State private var showingRename = false
@@ -78,6 +79,9 @@ struct GroupDetailView: View {
                 }
             }
         }
+        .fullScreenCover(item: $receiptFlow) { model in
+            ReceiptFlowSheet(model: model)
+        }
         .sheet(isPresented: $showingMemberPicker) {
             MemberPickerView(existingIDs: Set(group.people.map(\.id))) { people in
                 for person in people {
@@ -140,8 +144,13 @@ struct GroupDetailView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarTrailing) {
             if mode == .expenses {
-                Button { showingAddExpense = true } label: { Label("Add expense", systemImage: "plus") }
-                    .disabled(group.people.isEmpty)
+                Menu {
+                    Button { showingAddExpense = true } label: { Label("Add expense", systemImage: "square.and.pencil") }
+                    Button { startReceiptFlow() } label: { Label("Scan a receipt", systemImage: "doc.viewfinder") }
+                } label: {
+                    Label("Add", systemImage: "plus")
+                }
+                .disabled(group.people.isEmpty)
             }
             if mode == .balances {
                 ShareLink(item: settlementText) { Label("Share", systemImage: "square.and.arrow.up") }
@@ -178,6 +187,23 @@ struct GroupDetailView: View {
                 Label("More", systemImage: "ellipsis.circle")
             }
         }
+    }
+
+    /// Scan a receipt for this group: the flow starts with the members as
+    /// the diners and ends by adding an itemized expense here.
+    private func startReceiptFlow() {
+        let model = BillFlowModel()
+        model.people = group.people
+        model.target = BillFlowModel.GroupTarget(groupID: group.id, groupName: group.name,
+                                                 currencyCode: group.currencyCode, existingExpense: nil)
+        model.onItemized = { expense in
+            for person in expense.itemizedBill?.people ?? [] where group.person(withID: person.id) == nil {
+                group.apply(.addMember(person.withColorIndex(group.people.count)), by: meID)
+            }
+            group.apply(.addEntry(.expense(expense)), by: meID)
+            receiptFlow = nil
+        }
+        receiptFlow = model
     }
 
     private var kindBinding: Binding<GroupKind> {

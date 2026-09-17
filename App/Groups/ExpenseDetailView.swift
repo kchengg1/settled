@@ -11,6 +11,7 @@ struct ExpenseDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var editing = false
     @State private var confirmingDelete = false
+    @State private var receiptFlow: BillFlowModel?
 
     private var expense: Expense? {
         group.expenses.first { $0.id == expenseID }
@@ -43,6 +44,9 @@ struct ExpenseDetailView: View {
                     group.apply(.updateEntry(.expense(updated)), by: meID)
                 }
             }
+        }
+        .fullScreenCover(item: $receiptFlow) { model in
+            ReceiptFlowSheet(model: model)
         }
         .confirmationDialog("Delete this expense?", isPresented: $confirmingDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
@@ -91,6 +95,19 @@ struct ExpenseDetailView: View {
                             .monospacedDigit()
                             .foregroundStyle(line.color)
                     }
+                }
+            }
+
+            if let bill = expense.itemizedBill {
+                ItemizedBreakdownSections(snapshot: bill, namer: namer)
+                Section {
+                    Button {
+                        editReceipt(expense, bill: bill)
+                    } label: {
+                        Label("Edit receipt", systemImage: "doc.viewfinder")
+                    }
+                } footer: {
+                    Text("Reopens the scanned items so you can fix a line or reassign a dish; the split updates to match.")
                 }
             }
 
@@ -172,6 +189,24 @@ struct ExpenseDetailView: View {
         return nil
     }
 
+    /// Reopens the receipt flow on this expense's bill; saving regenerates
+    /// the split and updates the expense in place.
+    private func editReceipt(_ expense: Expense, bill: BillSnapshot) {
+        let model = BillFlowModel()
+        model.load(snapshot: bill, merchantName: expense.title)
+        model.payerID = expense.payerID
+        model.target = BillFlowModel.GroupTarget(groupID: group.id, groupName: group.name,
+                                                 currencyCode: expense.currencyCode, existingExpense: expense)
+        model.onItemized = { updated in
+            for person in updated.itemizedBill?.people ?? [] where group.person(withID: person.id) == nil {
+                group.apply(.addMember(person.withColorIndex(group.people.count)), by: meID)
+            }
+            group.apply(.updateEntry(.expense(updated)), by: meID)
+            receiptFlow = nil
+        }
+        receiptFlow = model
+    }
+
     private func splitTitle(_ split: SplitMethod) -> String {
         switch split {
         case .equally: return "equally"
@@ -179,6 +214,49 @@ struct ExpenseDetailView: View {
         case .percentages: return "by percent"
         case .exactCents: return "exact amounts"
         case .adjustment: return "with adjustments"
+        }
+    }
+}
+
+/// Per-person items from a scanned bill, the way the receipt summary
+/// shows them. One section per person with a share.
+struct ItemizedBreakdownSections: View {
+    let snapshot: BillSnapshot
+    let namer: Namer
+
+    var body: some View {
+        let result = snapshot.result
+        ForEach(result.shares) { share in
+            if share.totalCents != 0, let person = snapshot.people.first(where: { $0.id == share.personID }) {
+                Section {
+                    ForEach(snapshot.items) { item in
+                        if let cents = result.itemBreakdown[item.id]?[person.id] {
+                            row(cents == item.priceCents ? item.name : "\(item.name) (shared)", cents)
+                        }
+                    }
+                    if share.taxCents != 0 { row("Tax", share.taxCents) }
+                    if share.tipCents != 0 { row("Tip", share.tipCents) }
+                } header: {
+                    HStack {
+                        Text("\(namer.name(person.id))'s items")
+                        Spacer()
+                        Text(Money.format(share.totalCents))
+                            .monospacedDigit()
+                    }
+                }
+            }
+        }
+    }
+
+    private func row(_ label: String, _ cents: Int) -> some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+            Spacer()
+            Text(Money.format(cents))
+                .font(.subheadline)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
         }
     }
 }

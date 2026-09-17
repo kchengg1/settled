@@ -61,6 +61,8 @@ Fast, fair, and quietly private. Split The Bill just does the math so dinner doe
 ---
 
 ## What's New  [for this version — 4000 max]
+• Scan a receipt inside a group and it lands as an itemized expense — everyone owes exactly their dishes plus tax and tip
+• Add any saved bill to a group, matching diners to members
 • Expenses can have several payers, adjustments ("Sam +$5"), categories, notes, and a receipt photo
 • Any currency per expense, with balances kept per currency (or a manual "counts as" conversion)
 • Recurring expenses for rent and subscriptions

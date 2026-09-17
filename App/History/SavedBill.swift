@@ -12,6 +12,8 @@ final class SavedBill {
     var totalCents: Int
     var peopleNames: [String]
     var payload: Data
+    /// The group this bill was added to as an itemized expense, if any.
+    var groupID: UUID?
 
     init(date: Date = .now, merchantName: String?, totalCents: Int, peopleNames: [String], payload: Data) {
         self.date = date

@@ -29,11 +29,13 @@ struct ItemsEntryView: View {
             }
         }
         .scrollDismissesKeyboard(.interactively)
-        .navigationTitle(model.merchantName ?? "New Bill")
+        .navigationTitle(model.merchantName ?? (model.target == nil ? "New Bill" : "Receipt for \(model.target!.groupName)"))
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                NavigationLink(value: BillStep.history) {
-                    Label("History", systemImage: "clock")
+            if model.target == nil {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink(value: BillStep.history) {
+                        Label("History", systemImage: "clock")
+                    }
                 }
             }
             ToolbarItemGroup(placement: .topBarTrailing) {

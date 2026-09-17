@@ -99,6 +99,9 @@ public struct Expense: Identifiable, Hashable, Codable, Sendable {
     public var notes: String
     /// A receipt photo stored by the app outside the group document.
     public var receiptImageID: UUID?
+    /// The scanned, itemized bill this expense was built from, when it was.
+    /// The split is `.exactCents` derived from it; see `applyItemizedBill`.
+    public var itemizedBill: BillSnapshot?
     /// When set, balances count this expense as that amount in that currency.
     public var conversion: ConvertedAmount?
     public var recurrence: RecurrenceRule?
@@ -119,6 +122,7 @@ public struct Expense: Identifiable, Hashable, Codable, Sendable {
         category: ExpenseCategory = .general,
         notes: String = "",
         receiptImageID: UUID? = nil,
+        itemizedBill: BillSnapshot? = nil,
         conversion: ConvertedAmount? = nil,
         recurrence: RecurrenceRule? = nil,
         recurringSourceID: UUID? = nil,
@@ -136,6 +140,7 @@ public struct Expense: Identifiable, Hashable, Codable, Sendable {
         self.category = category
         self.notes = notes
         self.receiptImageID = receiptImageID
+        self.itemizedBill = itemizedBill
         self.conversion = conversion
         self.recurrence = recurrence
         self.recurringSourceID = recurringSourceID
@@ -156,6 +161,7 @@ public struct Expense: Identifiable, Hashable, Codable, Sendable {
         category: ExpenseCategory = .general,
         notes: String = "",
         receiptImageID: UUID? = nil,
+        itemizedBill: BillSnapshot? = nil,
         conversion: ConvertedAmount? = nil,
         recurrence: RecurrenceRule? = nil,
         recurringSourceID: UUID? = nil,
@@ -165,7 +171,7 @@ public struct Expense: Identifiable, Hashable, Codable, Sendable {
     ) {
         self.init(id: id, title: title, payers: [payerID: amountCents], amountCents: amountCents,
                   currencyCode: currencyCode, date: date, split: split, category: category, notes: notes,
-                  receiptImageID: receiptImageID, conversion: conversion, recurrence: recurrence,
+                  receiptImageID: receiptImageID, itemizedBill: itemizedBill, conversion: conversion, recurrence: recurrence,
                   recurringSourceID: recurringSourceID, isDeleted: isDeleted, createdAt: createdAt, updatedAt: updatedAt)
     }
 
@@ -202,7 +208,7 @@ public struct Expense: Identifiable, Hashable, Codable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case id, title, amountCents, currencyCode, date, payers, split, category, notes
-        case receiptImageID, conversion, recurrence, recurringSourceID, isDeleted, createdAt, updatedAt
+        case receiptImageID, itemizedBill, conversion, recurrence, recurringSourceID, isDeleted, createdAt, updatedAt
         /// Version 2 and earlier: a single payer.
         case payerID
     }
@@ -227,6 +233,7 @@ public struct Expense: Identifiable, Hashable, Codable, Sendable {
         category = try c.decodeIfPresent(ExpenseCategory.self, forKey: .category) ?? .general
         notes = try c.decodeIfPresent(String.self, forKey: .notes) ?? ""
         receiptImageID = try c.decodeIfPresent(UUID.self, forKey: .receiptImageID)
+        itemizedBill = try c.decodeIfPresent(BillSnapshot.self, forKey: .itemizedBill)
         conversion = try c.decodeIfPresent(ConvertedAmount.self, forKey: .conversion)
         recurrence = try c.decodeIfPresent(RecurrenceRule.self, forKey: .recurrence)
         recurringSourceID = try c.decodeIfPresent(UUID.self, forKey: .recurringSourceID)
@@ -248,6 +255,7 @@ public struct Expense: Identifiable, Hashable, Codable, Sendable {
         try c.encode(category, forKey: .category)
         try c.encode(notes, forKey: .notes)
         try c.encodeIfPresent(receiptImageID, forKey: .receiptImageID)
+        try c.encodeIfPresent(itemizedBill, forKey: .itemizedBill)
         try c.encodeIfPresent(conversion, forKey: .conversion)
         try c.encodeIfPresent(recurrence, forKey: .recurrence)
         try c.encodeIfPresent(recurringSourceID, forKey: .recurringSourceID)

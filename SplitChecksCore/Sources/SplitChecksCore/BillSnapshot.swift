@@ -4,7 +4,7 @@ import Foundation
 /// this as encoded data; the split is *recomputed* from it on read (the
 /// engine is deterministic), so saved bills re-render exactly and the
 /// storage schema stays trivial.
-public struct BillSnapshot: Codable, Sendable {
+public struct BillSnapshot: Hashable, Codable, Sendable {
     public var items: [LineItem]
     public var people: [Person]
     public var assignments: [Assignment]

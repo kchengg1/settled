@@ -105,7 +105,11 @@ struct ExpenseEditorView: View {
             Form {
                 basicsSection
                 paidBySection
-                splitSection
+                if existing?.isItemized == true {
+                    itemizedSection
+                } else {
+                    splitSection
+                }
                 if currencyCode != group.currencyCode {
                     conversionSection
                 }
@@ -138,7 +142,13 @@ struct ExpenseEditorView: View {
                 Text(currencyCode)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                CurrencyField(title: "0.00", cents: $amountCents).frame(width: 110)
+                if existing?.isItemized == true {
+                    Text(Money.format(amountCents, currencyCode: currencyCode))
+                        .font(.amount)
+                        .monospacedDigit()
+                } else {
+                    CurrencyField(title: "0.00", cents: $amountCents).frame(width: 110)
+                }
             }
             Picker("Currency", selection: $currencyCode) {
                 ForEach(Currencies.options(including: currencyCode), id: \.self) { code in
@@ -202,6 +212,17 @@ struct ExpenseEditorView: View {
             } else if mode == .adjust {
                 Text("Everyone splits what's left equally after their adjustments.")
             }
+        }
+    }
+
+    private var itemizedSection: some View {
+        Section {
+            Label("Split comes from the scanned receipt", systemImage: "doc.viewfinder")
+                .foregroundStyle(.secondary)
+        } header: {
+            Text("Split")
+        } footer: {
+            Text("Each person owes exactly their items plus tax and tip. To change it, open the expense and edit the receipt.")
         }
     }
 
@@ -345,6 +366,7 @@ struct ExpenseEditorView: View {
     }
 
     private var split: SplitMethod {
+        if let existing, existing.isItemized { return existing.split }
         let ids = group.people.map(\.id).filter { selected.contains($0) }
         switch mode {
         case .equally: return .equally(participantIDs: ids)
@@ -373,6 +395,7 @@ struct ExpenseEditorView: View {
             category: category,
             notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
             receiptImageID: receiptImageID,
+            itemizedBill: existing?.itemizedBill,
             conversion: conversion,
             recurrence: recurrence,
             recurringSourceID: existing?.recurringSourceID,
