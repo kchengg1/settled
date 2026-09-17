@@ -24,8 +24,13 @@ final class ScreenshotTests: XCTestCase {
         capture("02-groups")
 
         // 3) A group's expenses and payments. The first cell is the overall
-        // balance header, so open the trip by name.
-        app.staticTexts["Lisbon Trip"].firstMatch.tap()
+        // balance header, so open the trip by name. SwiftUI may expose the
+        // row as one combined element, so match on the label, any type.
+        let lisbon = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Lisbon Trip"))
+            .firstMatch
+        XCTAssertTrue(lisbon.waitForExistence(timeout: 10))
+        lisbon.tap()
         XCTAssertTrue(app.buttons["Balances"].waitForExistence(timeout: 10))
         capture("03-expenses")
 
