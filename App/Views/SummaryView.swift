@@ -21,18 +21,18 @@ struct SummaryView: View {
                 }
             }
 
-            Section {
-                HStack {
-                    Text("Grand total")
-                        .fontWeight(.semibold)
-                    Spacer()
-                    Text(Money.format(result.grandTotalCents))
-                        .monospacedDigit()
-                        .fontWeight(.semibold)
-                }
-            } footer: {
+            HeroCard {
+                Text("Grand total")
+                    .font(.subheadline.weight(.medium))
+                    .opacity(0.85)
+                Text(Money.format(result.grandTotalCents))
+                    .font(.heroAmount)
+                    .monospacedDigit()
                 Text("Every share adds up to the bill exactly — no lost pennies.")
+                    .font(.footnote)
+                    .opacity(0.85)
             }
+            .cardRow()
         }
         .navigationTitle("The split")
         .toolbar {
@@ -78,12 +78,15 @@ struct SummaryView: View {
                 else { expandedPersonIDs.insert(person.id) }
             }
         } label: {
-            HStack {
-                PersonChip(person: person)
+            HStack(spacing: 12) {
+                Avatar(person: person, size: 40)
+                Text(person.name)
+                    .font(.cardTitle)
+                    .foregroundStyle(.primary)
                 Spacer()
                 Text(Money.format(share.totalCents))
                     .monospacedDigit()
-                    .font(.title3.weight(.semibold))
+                    .font(.bigAmount)
                     .foregroundStyle(.primary)
                 Image(systemName: "chevron.down")
                     .font(.caption)

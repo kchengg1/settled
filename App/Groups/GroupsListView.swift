@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 import SplitChecksCore
 
-/// The Groups tab home: an overall "you owe / you are owed" header when
-/// the app knows who you are, then every group by last activity.
+/// The Groups tab home: a hero card with your overall position when the
+/// app knows who you are, then every group by last activity.
 struct GroupsListView: View {
     @Query(sort: \SavedTrip.updatedAt, order: .reverse) private var groups: [SavedTrip]
     @Environment(\.modelContext) private var context
@@ -16,19 +16,19 @@ struct GroupsListView: View {
         Group {
             if groups.isEmpty {
                 ContentUnavailableView {
-                    Label("No groups yet", systemImage: "person.3")
+                    Label("No groups yet", systemImage: "person.3.fill")
                 } description: {
                     Text("Create a group for a trip, a home, or any shared tab to track who owes whom.")
                 } actions: {
                     Button("New group") { showingNew = true }
                         .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
                 }
             } else {
                 List {
                     if let overall = overallBalance {
-                        Section {
-                            overallHeader(overall)
-                        }
+                        overallHero(overall)
+                            .cardRow()
                     }
                     Section {
                         ForEach(groups) { saved in
@@ -39,6 +39,8 @@ struct GroupsListView: View {
                         .onDelete { offsets in
                             for index in offsets { context.delete(groups[index]) }
                         }
+                    } header: {
+                        Text("Your groups")
                     }
                 }
             }
@@ -65,30 +67,30 @@ struct GroupsListView: View {
 
     private func row(_ saved: SavedTrip) -> some View {
         let group = saved.group
-        return HStack {
-            Image(systemName: saved.kind.systemImage)
-                .foregroundStyle(.tint)
-                .frame(width: 28)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(saved.name).font(.headline)
-                Text("\(saved.peopleCount) people · \(Money.format(saved.totalCents, currencyCode: group.currencyCode))")
+        let myBalance = meID.flatMap { id in
+            SettlementEngine.balances(for: group).first(where: { $0.personID == id })
+        }
+        return HStack(spacing: 12) {
+            KindBadge(kind: saved.kind)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(saved.name)
+                    .font(.cardTitle)
+                Text("\(saved.peopleCount) people · \(Money.format(saved.totalCents, currencyCode: group.currencyCode)) spent")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-            Spacer()
-            if let meID, let balance = SettlementEngine.balances(for: group).first(where: { $0.personID == meID }) {
-                Text(Namer(group: group, meID: meID).balanceLabel(balance))
-                    .font(.caption)
-                    .multilineTextAlignment(.trailing)
-                    .foregroundStyle(balanceColor(balance.cents))
+            Spacer(minLength: 8)
+            if let myBalance {
+                StatusPill(text: Namer(group: group, meID: meID).balanceLabel(myBalance),
+                           color: Theme.balanceColor(myBalance.cents))
             }
         }
+        .padding(.vertical, 4)
     }
 
     // MARK: - Overall balance
 
-    /// My net position summed across groups, per currency: what I owe in
-    /// total and what I'm owed in total.
+    /// My net position summed across groups, per currency.
     private struct Overall {
         var owe: [String: Int] = [:]
         var owed: [String: Int] = [:]
@@ -109,30 +111,43 @@ struct GroupsListView: View {
         return involved ? overall : nil
     }
 
-    @ViewBuilder
-    private func overallHeader(_ overall: Overall) -> some View {
-        if overall.isEmpty {
-            Label("You're all settled up", systemImage: "checkmark.seal.fill")
-                .foregroundStyle(.green)
-        } else {
-            ForEach(overall.owe.keys.sorted(), id: \.self) { code in
-                LabeledContent("You owe") {
-                    Text(Money.format(overall.owe[code] ?? 0, currencyCode: code))
-                        .monospacedDigit().foregroundStyle(.red)
-                }
-            }
-            ForEach(overall.owed.keys.sorted(), id: \.self) { code in
-                LabeledContent("You are owed") {
-                    Text(Money.format(overall.owed[code] ?? 0, currencyCode: code))
-                        .monospacedDigit().foregroundStyle(.green)
+    private func overallHero(_ overall: Overall) -> some View {
+        HeroCard {
+            Text("Overall")
+                .font(.subheadline.weight(.medium))
+                .opacity(0.85)
+            if overall.isEmpty {
+                Text("All settled up ✨")
+                    .font(.heroAmount)
+                Text("Nobody owes anybody. Enjoy it.")
+                    .font(.subheadline)
+                    .opacity(0.85)
+            } else {
+                HStack(alignment: .top, spacing: 28) {
+                    if !overall.owe.isEmpty {
+                        heroStat("You owe", overall.owe)
+                    }
+                    if !overall.owed.isEmpty {
+                        heroStat("You are owed", overall.owed)
+                    }
                 }
             }
         }
     }
 
-    private func balanceColor(_ cents: Int) -> Color {
-        if cents == 0 { return .secondary }
-        return cents > 0 ? .green : .red
+    private func heroStat(_ title: String, _ amounts: [String: Int]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption.weight(.medium))
+                .opacity(0.85)
+            ForEach(amounts.keys.sorted(), id: \.self) { code in
+                Text(Money.format(amounts[code] ?? 0, currencyCode: code))
+                    .font(.heroAmount)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            }
+        }
     }
 }
 
@@ -156,10 +171,14 @@ struct NewGroupSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Group name", text: $name)
-                        .focused($nameFocused)
-                        .submitLabel(.done)
-                        .onSubmit(create)
+                    HStack(spacing: 12) {
+                        KindBadge(kind: kind, size: 48)
+                        TextField("Group name", text: $name)
+                            .font(.cardTitle)
+                            .focused($nameFocused)
+                            .submitLabel(.done)
+                            .onSubmit(create)
+                    }
                     Picker("Type", selection: $kind) {
                         ForEach(GroupKind.allCases, id: \.self) { kind in
                             Label(kind.title, systemImage: kind.systemImage).tag(kind)

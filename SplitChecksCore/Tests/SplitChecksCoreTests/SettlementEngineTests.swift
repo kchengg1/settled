@@ -50,6 +50,7 @@ final class SettlementEngineTests: XCTestCase {
         // Property: applying the transfers zeroes everyone out.
         let trip = Trip(
             name: "Road trip",
+            simplifyDebts: true,
             people: [alice, bob, cara],
             expenses: [
                 Expense(title: "Gas", payerID: alice.id, amountCents: 8137,

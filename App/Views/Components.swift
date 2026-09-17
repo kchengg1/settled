@@ -11,31 +11,23 @@ enum ChipPalette {
     }
 }
 
-/// A tappable person chip: colored circle with initials plus the name.
+/// A tappable person chip: gradient avatar plus the name.
 struct PersonChip: View {
     let person: Person
     var isSelected: Bool = false
 
-    private var initials: String {
-        let parts = person.name.split(separator: " ").prefix(2)
-        return parts.map { String($0.prefix(1)).uppercased() }.joined()
-    }
-
     var body: some View {
-        HStack(spacing: 6) {
-            Text(initials.isEmpty ? "?" : initials)
-                .font(.caption.bold())
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(ChipPalette.color(for: person), in: Circle())
+        HStack(spacing: 8) {
+            Avatar(person: person, size: 28)
             Text(person.name)
-                .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                .font(.subheadline.weight(isSelected ? .semibold : .medium))
                 .lineLimit(1)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.leading, 4)
+        .padding(.trailing, 12)
+        .padding(.vertical, 4)
         .background(
-            Capsule().fill(isSelected ? ChipPalette.color(for: person).opacity(0.2) : Color(uiColor: .systemGray6))
+            Capsule().fill(isSelected ? ChipPalette.color(for: person).opacity(0.18) : Color(uiColor: .systemGray6))
         )
         .overlay(
             Capsule().strokeBorder(isSelected ? ChipPalette.color(for: person) : .clear, lineWidth: 2)
@@ -50,17 +42,7 @@ struct AssigneeStack: View {
     let people: [Person]
 
     var body: some View {
-        HStack(spacing: -8) {
-            ForEach(people) { person in
-                Text(String(person.name.prefix(1)).uppercased())
-                    .font(.caption2.bold())
-                    .foregroundStyle(.white)
-                    .frame(width: 22, height: 22)
-                    .background(ChipPalette.color(for: person), in: Circle())
-                    .overlay(Circle().strokeBorder(Color(uiColor: .systemBackground), lineWidth: 1.5))
-            }
-        }
-        .accessibilityLabel(Text(people.map(\.name).joined(separator: ", ")))
+        AvatarStack(people: people, size: 22, max: 5)
     }
 }
 
@@ -77,6 +59,7 @@ struct CurrencyField: View {
             .keyboardType(.decimalPad)
             .focused($focused)
             .multilineTextAlignment(.trailing)
+            .font(.amount)
             .onAppear { text = cents == 0 ? "" : displayString }
             .onChange(of: text) {
                 if let parsed = Money.parse(text) { cents = parsed }

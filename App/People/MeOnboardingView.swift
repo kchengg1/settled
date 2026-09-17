@@ -18,15 +18,29 @@ struct MeOnboardingView: View {
         NavigationStack {
             Form {
                 Section {
+                    VStack(spacing: 10) {
+                        IconBadge(systemImage: "person.fill", color: Theme.accent, size: 64)
+                        Text("Who's holding the phone?")
+                            .font(.system(.title2, design: .rounded, weight: .bold))
+                        Text("Tell the app who you are so balances read \"you owe Sam\" — and you're added to new groups automatically.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                }
+                Section {
                     TextField("Your name", text: $name)
                         .textContentType(.name)
                         .focused($nameFocused)
                         .submitLabel(.done)
                         .onSubmit(save)
                 } header: {
-                    Text("What's your name?")
+                    Text("Your name")
                 } footer: {
-                    Text("So the app can say \"you owe Sam\" instead of naming you. This stays on your phone.")
+                    Text("This stays on your phone.")
                 }
 
                 if !people.isEmpty {

@@ -17,11 +17,18 @@ struct SettingsView: View {
         List {
             Section {
                 if let me {
-                    HStack {
-                        PersonChip(person: me.person)
+                    HStack(spacing: 14) {
+                        Avatar(person: me.person, size: 56)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(me.name).font(.cardTitle)
+                            Text("That's you").font(.subheadline).foregroundStyle(.secondary)
+                        }
                         Spacer()
                         Button("Change") { showingMe = true }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
                     }
+                    .padding(.vertical, 4)
                 } else {
                     Button {
                         showingMe = true
@@ -44,8 +51,9 @@ struct SettingsView: View {
                     NavigationLink {
                         PersonEditView(saved: saved)
                     } label: {
-                        HStack {
-                            PersonChip(person: saved.person)
+                        HStack(spacing: 12) {
+                            Avatar(person: saved.person, size: 32)
+                            Text(saved.name)
                             if saved.id.uuidString == meIDString {
                                 Text("you").font(.caption).foregroundStyle(.secondary)
                             }

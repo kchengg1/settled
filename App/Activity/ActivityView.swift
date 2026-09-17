@@ -97,12 +97,10 @@ struct ActivityEventRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: symbol)
-                .foregroundStyle(color)
-                .frame(width: 24)
-                .padding(.top, 2)
-            VStack(alignment: .leading, spacing: 2) {
+            IconBadge(systemImage: symbol, color: color)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(event.summary)
+                    .font(.subheadline.weight(.medium))
                 Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -126,22 +124,22 @@ struct ActivityEventRow: View {
 
     private var symbol: String {
         switch event.kind {
-        case .entryAdded: return "plus.circle.fill"
-        case .entryEdited: return "pencil.circle.fill"
-        case .entryDeleted: return "trash.circle.fill"
-        case .entryRestored: return "arrow.uturn.backward.circle.fill"
+        case .entryAdded: return "plus"
+        case .entryEdited: return "pencil"
+        case .entryDeleted: return "trash"
+        case .entryRestored: return "arrow.uturn.backward"
         case .memberAdded: return "person.badge.plus"
         case .memberRemoved: return "person.badge.minus"
         case .groupRenamed: return "textformat"
-        case .settingsChanged: return "gearshape.fill"
+        case .settingsChanged: return "gearshape"
         }
     }
 
     private var color: Color {
         switch event.kind {
-        case .entryAdded: return .green
+        case .entryAdded: return Theme.positive
         case .entryEdited: return .blue
-        case .entryDeleted: return .red
+        case .entryDeleted: return Theme.negative
         case .entryRestored: return .orange
         default: return .secondary
         }

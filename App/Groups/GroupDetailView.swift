@@ -39,6 +39,9 @@ struct GroupDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            headerCard
+                .padding(.horizontal)
+                .padding(.top, 8)
             Picker("View", selection: $mode) {
                 ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
@@ -52,6 +55,7 @@ struct GroupDetailView: View {
             case .people: peopleList
             }
         }
+        .background(Theme.groupedBackground)
         .navigationTitle(group.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
@@ -98,6 +102,38 @@ struct GroupDetailView: View {
                 undoBanner(id)
             }
         }
+    }
+
+    /// Members, total spent, and where I stand — always visible.
+    private var headerCard: some View {
+        let myBalance = meID.flatMap { id in
+            SettlementEngine.balances(for: group).first(where: { $0.personID == id })
+        }
+        return HStack(spacing: 14) {
+            if group.people.isEmpty {
+                KindBadge(kind: group.kind, size: 44)
+            } else {
+                AvatarStack(people: group.people, size: 32)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Total spent")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(Money.format(group.totalCents, currencyCode: group.currencyCode))
+                    .font(.bigAmount)
+                    .monospacedDigit()
+            }
+            Spacer(minLength: 8)
+            if let myBalance {
+                StatusPill(text: namer.balanceLabel(myBalance), color: Theme.balanceColor(myBalance.cents))
+            } else {
+                Label(group.kind.title, systemImage: group.kind.systemImage)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: Theme.corner, style: .continuous))
     }
 
     @ToolbarContentBuilder
@@ -182,15 +218,8 @@ struct GroupDetailView: View {
                             }
                         }
                 }
-                Section {
-                    HStack {
-                        Text("Total spent").fontWeight(.semibold)
-                        Spacer()
-                        Text(Money.format(group.totalCents, currencyCode: group.currencyCode))
-                            .monospacedDigit().fontWeight(.semibold)
-                    }
-                }
             }
+            .scrollContentBackground(.hidden)
         }
     }
 
@@ -215,52 +244,65 @@ struct GroupDetailView: View {
     }
 
     private func expenseRow(_ expense: Expense) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 12) {
+            DateBadge(date: expense.date)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(expense.title)
-                Text("Paid by \(namer.name(expense.payerID)) · \(splitSummary(expense))")
+                    .font(.body.weight(.medium))
+                Text("\(namer.name(expense.payerID)) paid \(Money.format(expense.amountCents, currencyCode: group.currencyCode)) · \(splitSummary(expense))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(Money.format(expense.amountCents, currencyCode: group.currencyCode))
-                    .monospacedDigit()
-                if let line = myLine(for: expense) {
-                    Text(line.text)
-                        .font(.caption)
+            Spacer(minLength: 8)
+            if let line = myLine(for: expense) {
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(line.label)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(line.amount)
+                        .font(.amount)
+                        .monospacedDigit()
                         .foregroundStyle(line.color)
                 }
+            } else {
+                Text(Money.format(expense.amountCents, currencyCode: group.currencyCode))
+                    .font(.amount)
+                    .monospacedDigit()
             }
         }
+        .padding(.vertical, 2)
     }
 
     private func paymentRow(_ payment: Payment) -> some View {
-        HStack {
-            Image(systemName: "arrow.right.circle.fill")
-                .foregroundStyle(.green)
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 12) {
+            IconBadge(systemImage: "arrow.right", color: Theme.positive, size: 40)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(namer.paymentLine(payment))
+                    .font(.body.weight(.medium))
                 Text("\(payment.method.title) · \(payment.date.formatted(date: .abbreviated, time: .omitted))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Spacer()
+            Spacer(minLength: 8)
             Text(Money.format(payment.cents, currencyCode: payment.currencyCode))
+                .font(.amount)
                 .monospacedDigit()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.positive)
         }
+        .padding(.vertical, 2)
     }
 
-    /// "you lent $40" / "you borrowed $12" for an expense I'm part of.
-    private func myLine(for expense: Expense) -> (text: String, color: Color)? {
+    /// "you lent" / "you borrowed" with the amount, for an expense I'm part of.
+    private func myLine(for expense: Expense) -> (label: String, amount: String, color: Color)? {
         guard let meID else { return nil }
         let known = Set(group.people.map(\.id))
         let owed = SettlementEngine.owedShares(for: expense, knownPeople: known)[meID] ?? 0
         let paid = expense.payerID == meID ? expense.amountCents : 0
         let net = paid - owed
-        if net > 0 { return ("you lent \(Money.format(net, currencyCode: group.currencyCode))", .green) }
-        if net < 0 { return ("you borrowed \(Money.format(-net, currencyCode: group.currencyCode))", .orange) }
+        if net > 0 { return ("you lent", Money.format(net, currencyCode: group.currencyCode), Theme.positive) }
+        if net < 0 { return ("you borrowed", Money.format(-net, currencyCode: group.currencyCode), Theme.negative) }
+        if owed > 0 { return ("your share", Money.format(owed, currencyCode: group.currencyCode), .secondary) }
         return nil
     }
 
@@ -276,8 +318,11 @@ struct GroupDetailView: View {
     }
 
     private func undoBanner(_ id: UUID) -> some View {
-        HStack {
+        HStack(spacing: 12) {
+            Image(systemName: "trash")
+                .foregroundStyle(.secondary)
             Text("Deleted \(undoTitle)")
+                .font(.subheadline)
                 .lineLimit(1)
             Spacer()
             Button("Undo") {
@@ -285,23 +330,29 @@ struct GroupDetailView: View {
                 undoTask?.cancel()
                 undoEntryID = nil
             }
+            .font(.subheadline.weight(.semibold))
             .buttonStyle(.borderedProminent)
+            .controlSize(.small)
         }
-        .padding()
-        .background(.bar)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.corner, style: .continuous))
+        .padding(.horizontal)
+        .padding(.bottom, 8)
     }
 
     // MARK: - Balances & settle up
 
     private var balancesList: some View {
         let settlement = SettlementEngine.settlement(for: group)
+        let maxCents = settlement.balances.map { abs($0.cents) }.max() ?? 0
         return List {
             Section("Balances") {
                 if group.liveEntries.isEmpty {
                     Text("No expenses yet.").foregroundStyle(Color.secondary)
                 }
                 ForEach(settlement.balances) { balance in
-                    balanceRow(balance)
+                    balanceRow(balance, maxCents: maxCents)
                 }
             }
 
@@ -322,46 +373,66 @@ struct GroupDetailView: View {
                      : "Debts as they happened, netted per pair. Turn on simplify for the fewest payments.")
             }
         }
+        .scrollContentBackground(.hidden)
     }
 
-    private func balanceRow(_ balance: Balance) -> some View {
-        HStack {
-            if let person = group.person(withID: balance.personID) {
-                PersonChip(person: person)
+    private func balanceRow(_ balance: Balance, maxCents: Int) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                if let person = group.person(withID: balance.personID) {
+                    Avatar(person: person, size: 36)
+                }
+                Text(namer.name(balance.personID))
+                    .font(.body.weight(.medium))
+                Spacer()
+                Text(namer.balanceLabel(balance))
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.balanceColor(balance.cents))
             }
-            Spacer()
-            Text(namer.balanceLabel(balance))
-                .monospacedDigit()
-                .foregroundStyle(balanceColor(balance.cents))
+            BalanceBar(cents: balance.cents, maxCents: maxCents)
         }
+        .padding(.vertical, 4)
     }
 
     private func transferRow(_ transfer: Transfer) -> some View {
-        HStack {
-            Text(namer.name(transfer.fromID))
-            Image(systemName: "arrow.right").font(.caption).foregroundStyle(Color.secondary)
-            Text(namer.name(transfer.toID))
-            Spacer()
-            Text(Money.format(transfer.cents, currencyCode: group.currencyCode))
-                .monospacedDigit().fontWeight(.medium)
-            Button("Record") {
-                paymentDraft = PaymentDraft(fromID: transfer.fromID, toID: transfer.toID, cents: transfer.cents)
+        HStack(spacing: 10) {
+            HStack(spacing: 4) {
+                avatar(for: transfer.fromID)
+                Image(systemName: "arrow.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+                avatar(for: transfer.toID)
             }
-            .buttonStyle(.bordered)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(namer.name(transfer.fromID)) → \(namer.name(transfer.toID))")
+                    .font(.subheadline.weight(.medium))
+                Text(Money.format(transfer.cents, currencyCode: group.currencyCode))
+                    .font(.amount)
+                    .monospacedDigit()
+            }
+            Spacer(minLength: 8)
+            Button {
+                paymentDraft = PaymentDraft(fromID: transfer.fromID, toID: transfer.toID, cents: transfer.cents)
+            } label: {
+                Label("Record", systemImage: "checkmark")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderedProminent)
             .controlSize(.small)
         }
+        .padding(.vertical, 2)
+    }
+
+    private func avatar(for id: Person.ID) -> some View {
+        Avatar(person: group.person(withID: id) ?? Person(name: "?"), size: 28)
     }
 
     private var settledUpLabel: some View {
         let empty = group.liveEntries.isEmpty
         return Label(empty ? "Nothing to settle yet" : "All settled up 🎉",
                      systemImage: empty ? "tray" : "checkmark.seal.fill")
-            .foregroundStyle(empty ? Color.secondary : Color.green)
-    }
-
-    private func balanceColor(_ cents: Int) -> Color {
-        if cents == 0 { return .secondary }
-        return cents > 0 ? .green : .red
+            .foregroundStyle(empty ? Color.secondary : Theme.positive)
     }
 
     // MARK: - Activity
@@ -387,6 +458,7 @@ struct GroupDetailView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
         }
     }
 
@@ -401,8 +473,9 @@ struct GroupDetailView: View {
         List {
             Section {
                 ForEach(group.people) { person in
-                    HStack {
-                        PersonChip(person: person)
+                    HStack(spacing: 12) {
+                        Avatar(person: person, size: 36)
+                        Text(person.name).font(.body.weight(.medium))
                         if namer.isMe(person.id) {
                             Text("you").font(.caption).foregroundStyle(.secondary)
                         }
@@ -439,6 +512,7 @@ struct GroupDetailView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
     }
 
     // MARK: - Helpers

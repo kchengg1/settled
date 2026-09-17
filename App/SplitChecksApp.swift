@@ -49,18 +49,19 @@ struct RootView: View {
             NavigationStack {
                 GroupsListView()
             }
-            .tabItem { Label("Groups", systemImage: "person.3") }
+            .tabItem { Label("Groups", systemImage: "person.3.fill") }
 
             NavigationStack {
                 ActivityView()
             }
-            .tabItem { Label("Activity", systemImage: "clock") }
+            .tabItem { Label("Activity", systemImage: "clock.fill") }
 
             NavigationStack {
                 SettingsView()
             }
-            .tabItem { Label("Settings", systemImage: "gearshape") }
+            .tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }
+        .tint(Theme.accent)
         .task {
             PeopleDirectory.backfillIfNeeded(in: context)
             if !onboarded { showingOnboarding = true }
