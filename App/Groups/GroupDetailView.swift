@@ -220,7 +220,7 @@ struct GroupDetailView: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .contentMargins(.top, 4, for: .scrollContent)
+        .contentMargins(.top, 4, for: .scrollContent)
         }
     }
 
@@ -375,7 +375,7 @@ struct GroupDetailView: View {
             }
         }
         .scrollContentBackground(.hidden)
-            .contentMargins(.top, 4, for: .scrollContent)
+        .contentMargins(.top, 4, for: .scrollContent)
     }
 
     private func balanceRow(_ balance: Balance, maxCents: Int) -> some View {
@@ -461,7 +461,7 @@ struct GroupDetailView: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .contentMargins(.top, 4, for: .scrollContent)
+        .contentMargins(.top, 4, for: .scrollContent)
         }
     }
 
@@ -516,7 +516,7 @@ struct GroupDetailView: View {
             }
         }
         .scrollContentBackground(.hidden)
-            .contentMargins(.top, 4, for: .scrollContent)
+        .contentMargins(.top, 4, for: .scrollContent)
     }
 
     // MARK: - Helpers
