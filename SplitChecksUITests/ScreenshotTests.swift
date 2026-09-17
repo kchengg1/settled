@@ -38,6 +38,17 @@ final class ScreenshotTests: XCTestCase {
         app.buttons["Balances"].tap()
         capture("04-settle-up")
 
+        // 5) One expense in detail: a two-payer dinner with an adjustment.
+        app.buttons["Expenses"].tap()
+        let dinner = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Seafood dinner"))
+            .firstMatch
+        XCTAssertTrue(dinner.waitForExistence(timeout: 10))
+        dinner.tap()
+        XCTAssertTrue(app.navigationBars["Seafood dinner"].waitForExistence(timeout: 10))
+        capture("06-expense-detail")
+        app.navigationBars.buttons.firstMatch.tap()
+
         // 5) The cross-group activity feed.
         app.tabBars.buttons["Activity"].tap()
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
