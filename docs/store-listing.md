@@ -61,6 +61,9 @@ Fast, fair, and quietly private. Split The Bill just does the math so dinner doe
 ---
 
 ## What's New  [for this version — 4000 max]
+• Expenses can have several payers, adjustments ("Sam +$5"), categories, notes, and a receipt photo
+• Any currency per expense, with balances kept per currency (or a manual "counts as" conversion)
+• Recurring expenses for rent and subscriptions
 • Trips are now Groups: trips, homes, couples, events — any shared tab
 • Record payments when someone pays you back, and watch balances go down
 • See debts as they happened, or flip on "simplify debts" for the fewest payments

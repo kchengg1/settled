@@ -35,7 +35,9 @@ struct SplitChecksApp: App {
 struct RootView: View {
     @Bindable var model: BillFlowModel
     @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage(Me.onboardedKey) private var onboarded = false
+    @AppStorage(Me.defaultsKey) private var meIDString = ""
     @State private var showingOnboarding = false
 
     var body: some View {
@@ -64,12 +66,30 @@ struct RootView: View {
         .tint(Theme.accent)
         .task {
             PeopleDirectory.backfillIfNeeded(in: context)
+            materializeRecurring()
             if !onboarded { showingOnboarding = true }
+        }
+        // No server generates recurring expenses; the app does, whenever
+        // it comes to the foreground.
+        .onChange(of: scenePhase) {
+            if scenePhase == .active { materializeRecurring() }
         }
         // Dismissing by any route counts as "asked once"; Settings can
         // always set it later.
         .sheet(isPresented: $showingOnboarding, onDismiss: { onboarded = true }) {
             MeOnboardingView()
+        }
+    }
+}
+
+extension RootView {
+    private func materializeRecurring() {
+        let groups = (try? context.fetch(FetchDescriptor<SavedTrip>())) ?? []
+        for saved in groups {
+            var group = saved.group
+            if group.materializeRecurring(by: Me.parse(meIDString)) > 0 {
+                saved.update(from: group)
+            }
         }
     }
 }

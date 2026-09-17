@@ -163,6 +163,7 @@ struct NewGroupSheet: View {
     @AppStorage(Me.defaultsKey) private var meIDString = ""
     @State private var name = ""
     @State private var kind: GroupKind = .trip
+    @State private var currencyCode = Locale.current.currency?.identifier ?? "USD"
     @State private var includeMe = true
     @FocusState private var nameFocused: Bool
 
@@ -187,8 +188,13 @@ struct NewGroupSheet: View {
                             Label(kind.title, systemImage: kind.systemImage).tag(kind)
                         }
                     }
+                    Picker("Currency", selection: $currencyCode) {
+                        ForEach(Currencies.options(including: currencyCode), id: \.self) { code in
+                            Text("\(code) · \(Currencies.name(code))").tag(code)
+                        }
+                    }
                 } footer: {
-                    Text("A getaway, a shared house, a couple's tab — the type only changes the icon.")
+                    Text("The type only changes the icon. Expenses can be in any currency; this is the default.")
                 }
                 if let me {
                     Section {
@@ -218,7 +224,7 @@ struct NewGroupSheet: View {
     private func create() {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        var group = ExpenseGroup(name: trimmed, kind: kind)
+        var group = ExpenseGroup(name: trimmed, kind: kind, currencyCode: currencyCode)
         if includeMe, let me {
             group.apply(.addMember(me.person(colorIndex: 0)), by: me.id)
             me.lastUsedAt = .now

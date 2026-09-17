@@ -16,6 +16,7 @@ struct RecordPaymentView: View {
     @State private var date: Date
     @State private var method: PaymentMethod
     @State private var note: String
+    private let currencyCode: String
 
     init(group: ExpenseGroup, draft: PaymentDraft, meID: Person.ID?, onSave: @escaping (Payment) -> Void) {
         self.group = group
@@ -31,6 +32,7 @@ struct RecordPaymentView: View {
         _date = State(initialValue: draft.existing?.date ?? .now)
         _method = State(initialValue: draft.existing?.method ?? .cash)
         _note = State(initialValue: draft.existing?.note ?? "")
+        currencyCode = draft.currencyCode ?? group.currencyCode
     }
 
     private var isValid: Bool {
@@ -51,13 +53,16 @@ struct RecordPaymentView: View {
                     HStack {
                         Text("Amount")
                         Spacer()
+                        Text(currencyCode)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
                         CurrencyField(title: "0.00", cents: $cents).frame(width: 110)
                     }
                 } footer: {
                     if fromID == toID {
                         Text("Pick two different people.").foregroundStyle(.red)
                     } else if let suggested = suggestedCents, suggested != cents {
-                        Text("\(name(for: fromID)) currently owes \(name(for: toID)) \(Money.format(suggested, currencyCode: group.currencyCode)).")
+                        Text("\(name(for: fromID)) currently owes \(name(for: toID)) \(Money.format(suggested, currencyCode: currencyCode)).")
                     }
                 }
 
@@ -82,7 +87,7 @@ struct RecordPaymentView: View {
 
     /// What the pairwise ledger says `from` owes `to` right now, if anything.
     private var suggestedCents: Int? {
-        SettlementEngine.pairwiseDebts(for: group)
+        SettlementEngine.pairwiseDebts(for: group, currencyCode: currencyCode)
             .first { $0.fromID == fromID && $0.toID == toID }?.cents
     }
 
@@ -100,7 +105,7 @@ struct RecordPaymentView: View {
             fromID: fromID,
             toID: toID,
             cents: cents,
-            currencyCode: group.currencyCode,
+            currencyCode: currencyCode,
             date: date,
             method: method,
             note: note.trimmingCharacters(in: .whitespaces),

@@ -189,4 +189,7 @@ public enum GroupChange: Hashable, Sendable {
     case rename(String)
     case setSimplifyDebts(Bool)
     case setKind(GroupKind)
+    /// Changes the group's default currency. Existing expenses keep the
+    /// currency they were entered in.
+    case setCurrency(String)
 }

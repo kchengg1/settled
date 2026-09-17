@@ -41,9 +41,9 @@ struct Namer {
 
     /// For a row that already shows the person's name: "owe $12.00" after
     /// "You", "owes $12.00" after "Sam".
-    func balanceVerbLabel(_ balance: Balance) -> String {
+    func balanceVerbLabel(_ balance: Balance, currencyCode: String? = nil) -> String {
         if balance.cents == 0 { return "settled up" }
-        let amount = Money.format(abs(balance.cents), currencyCode: group.currencyCode)
+        let amount = Money.format(abs(balance.cents), currencyCode: currencyCode ?? group.currencyCode)
         let me = isMe(balance.personID)
         if balance.cents > 0 { return me ? "get back \(amount)" : "gets back \(amount)" }
         return me ? "owe \(amount)" : "owes \(amount)"
@@ -99,5 +99,78 @@ extension Person {
     /// The same person with a chip color chosen for one bill or group.
     func withColorIndex(_ index: Int) -> Person {
         Person(id: id, name: name, colorIndex: index, handles: handles)
+    }
+}
+
+extension ExpenseCategory {
+    var title: String {
+        switch self {
+        case .general: return "General"
+        case .food: return "Food"
+        case .drinks: return "Drinks"
+        case .groceries: return "Groceries"
+        case .transport: return "Transport"
+        case .lodging: return "Lodging"
+        case .entertainment: return "Entertainment"
+        case .utilities: return "Utilities"
+        case .shopping: return "Shopping"
+        case .health: return "Health"
+        case .other: return "Other"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .general: return "tag"
+        case .food: return "fork.knife"
+        case .drinks: return "wineglass"
+        case .groceries: return "cart"
+        case .transport: return "car"
+        case .lodging: return "bed.double"
+        case .entertainment: return "ticket"
+        case .utilities: return "bolt"
+        case .shopping: return "bag"
+        case .health: return "cross.case"
+        case .other: return "ellipsis.circle"
+        }
+    }
+}
+
+extension RecurrenceRule.Frequency {
+    var title: String {
+        switch self {
+        case .weekly: return "Weekly"
+        case .monthly: return "Monthly"
+        case .yearly: return "Yearly"
+        }
+    }
+}
+
+/// Currencies offered in pickers. Any 3-letter code works; these are the
+/// ones people reach for.
+enum Currencies {
+    static let common = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "MXN", "CHF", "INR", "CNY", "KRW",
+                         "BRL", "SEK", "NOK", "DKK", "NZD", "SGD", "HKD", "THB", "PLN", "CZK"]
+
+    /// The common list with `code` included, so a picker never shows a
+    /// selection it can't display.
+    static func options(including code: String) -> [String] {
+        common.contains(code) ? common : [code] + common
+    }
+
+    static func name(_ code: String) -> String {
+        Locale.current.localizedString(forCurrencyCode: code) ?? code
+    }
+}
+
+extension Namer {
+    /// "You paid" / "Sam paid" / "Sam and Jordan paid".
+    func payersLine(_ expense: Expense) -> String {
+        let names = expense.payerIDs.map { name($0) }
+        switch names.count {
+        case 0: return "Nobody paid"
+        case 1: return "\(names[0]) paid"
+        default: return names.dropLast().joined(separator: ", ") + " and " + names.last! + " paid"
+        }
     }
 }

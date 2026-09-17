@@ -168,6 +168,11 @@ struct GroupDetailView: View {
                         Label(kind.title, systemImage: kind.systemImage).tag(kind)
                     }
                 }
+                Picker("Currency", selection: currencyBinding) {
+                    ForEach(Currencies.options(including: group.currencyCode), id: \.self) { code in
+                        Text("\(code) · \(Currencies.name(code))").tag(code)
+                    }
+                }
                 Toggle("Simplify debts", isOn: simplifyBinding)
             } label: {
                 Label("More", systemImage: "ellipsis.circle")
@@ -177,6 +182,10 @@ struct GroupDetailView: View {
 
     private var kindBinding: Binding<GroupKind> {
         Binding(get: { group.kind }, set: { group.apply(.setKind($0), by: meID) })
+    }
+
+    private var currencyBinding: Binding<String> {
+        Binding(get: { group.currencyCode }, set: { group.apply(.setCurrency($0), by: meID) })
     }
 
     private var simplifyBinding: Binding<Bool> {
@@ -228,12 +237,11 @@ struct GroupDetailView: View {
     private func entryRow(_ entry: LedgerEntry) -> some View {
         switch entry {
         case .expense(let expense):
-            Button {
-                editingExpense = expense
+            NavigationLink {
+                ExpenseDetailView(group: $group, expenseID: expense.id, meID: meID)
             } label: {
                 expenseRow(expense)
             }
-            .foregroundStyle(.primary)
         case .payment(let payment):
             Button {
                 paymentDraft = PaymentDraft(existing: payment)
@@ -248,9 +256,15 @@ struct GroupDetailView: View {
         HStack(spacing: 12) {
             DateBadge(date: expense.date)
             VStack(alignment: .leading, spacing: 3) {
-                Text(expense.title)
-                    .font(.body.weight(.medium))
-                Text("\(namer.name(expense.payerID)) paid \(Money.format(expense.amountCents, currencyCode: group.currencyCode)) · \(splitSummary(expense))")
+                HStack(spacing: 6) {
+                    Image(systemName: expense.category.systemImage)
+                        .font(.caption)
+                        .foregroundStyle(Theme.accent)
+                    Text(expense.title)
+                        .font(.body.weight(.medium))
+                        .lineLimit(1)
+                }
+                Text("\(namer.payersLine(expense)) \(Money.format(expense.amountCents, currencyCode: expense.currencyCode))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -267,7 +281,7 @@ struct GroupDetailView: View {
                         .foregroundStyle(line.color)
                 }
             } else {
-                Text(Money.format(expense.amountCents, currencyCode: group.currencyCode))
+                Text(Money.format(expense.amountCents, currencyCode: expense.currencyCode))
                     .font(.amount)
                     .monospacedDigit()
             }
@@ -297,13 +311,13 @@ struct GroupDetailView: View {
     /// "you lent" / "you borrowed" with the amount, for an expense I'm part of.
     private func myLine(for expense: Expense) -> (label: String, amount: String, color: Color)? {
         guard let meID else { return nil }
-        let known = Set(group.people.map(\.id))
-        let owed = SettlementEngine.owedShares(for: expense, knownPeople: known)[meID] ?? 0
-        let paid = expense.payerID == meID ? expense.amountCents : 0
-        let net = paid - owed
-        if net > 0 { return ("you lent", Money.format(net, currencyCode: group.currencyCode), Theme.positive) }
-        if net < 0 { return ("you borrowed", Money.format(-net, currencyCode: group.currencyCode), Theme.negative) }
-        if owed > 0 { return ("your share", Money.format(owed, currencyCode: group.currencyCode), .secondary) }
+        let contribution = SettlementEngine.contribution(for: expense, knownPeople: Set(group.people.map(\.id)))
+        let net = contribution.net[meID] ?? 0
+        let code = contribution.currencyCode
+        if net > 0 { return ("you lent", Money.format(net, currencyCode: code), Theme.positive) }
+        if net < 0 { return ("you borrowed", Money.format(-net, currencyCode: code), Theme.negative) }
+        let owed = contribution.owed[meID] ?? 0
+        if owed > 0 { return ("your share", Money.format(owed, currencyCode: code), .secondary) }
         return nil
     }
 
@@ -345,31 +359,37 @@ struct GroupDetailView: View {
     // MARK: - Balances & settle up
 
     private var balancesList: some View {
-        let settlement = SettlementEngine.settlement(for: group)
-        let maxCents = settlement.balances.map { abs($0.cents) }.max() ?? 0
+        let settlements = SettlementEngine.settlements(for: group)
+        let multi = settlements.count > 1
         return List {
-            Section("Balances") {
-                if group.liveEntries.isEmpty {
-                    Text("No expenses yet.").foregroundStyle(Color.secondary)
+            ForEach(settlements, id: \.currencyCode) { settlement in
+                let maxCents = settlement.balances.map { abs($0.cents) }.max() ?? 0
+                Section(multi ? "Balances · \(settlement.currencyCode)" : "Balances") {
+                    if group.liveEntries.isEmpty {
+                        Text("No expenses yet.").foregroundStyle(Color.secondary)
+                    }
+                    ForEach(settlement.balances) { balance in
+                        balanceRow(balance, maxCents: maxCents, currencyCode: settlement.currencyCode)
+                    }
                 }
-                ForEach(settlement.balances) { balance in
-                    balanceRow(balance, maxCents: maxCents)
+
+                Section {
+                    if settlement.transfers.isEmpty {
+                        settledUpLabel
+                    } else {
+                        ForEach(settlement.transfers, id: \.self) { transfer in
+                            transferRow(transfer, currencyCode: settlement.currencyCode)
+                        }
+                    }
+                } header: {
+                    Text(multi ? "Settle up · \(settlement.currencyCode)" : "Settle up")
                 }
             }
 
             Section {
-                if settlement.transfers.isEmpty {
-                    settledUpLabel
-                } else {
-                    ForEach(settlement.transfers, id: \.self) { transfer in
-                        transferRow(transfer)
-                    }
-                }
                 Toggle("Simplify debts", isOn: simplifyBinding)
-            } header: {
-                Text("Settle up")
             } footer: {
-                Text(settlement.isSimplified
+                Text(group.simplifyDebts
                      ? "The fewest payments that clear every balance."
                      : "Debts as they happened, netted per pair. Turn on simplify for the fewest payments.")
             }
@@ -378,7 +398,7 @@ struct GroupDetailView: View {
         .contentMargins(.top, 4, for: .scrollContent)
     }
 
-    private func balanceRow(_ balance: Balance, maxCents: Int) -> some View {
+    private func balanceRow(_ balance: Balance, maxCents: Int, currencyCode: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
                 if let person = group.person(withID: balance.personID) {
@@ -387,7 +407,7 @@ struct GroupDetailView: View {
                 Text(namer.name(balance.personID))
                     .font(.body.weight(.medium))
                 Spacer()
-                Text(namer.balanceVerbLabel(balance))
+                Text(namer.balanceVerbLabel(balance, currencyCode: currencyCode))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.balanceColor(balance.cents))
@@ -397,7 +417,7 @@ struct GroupDetailView: View {
         .padding(.vertical, 4)
     }
 
-    private func transferRow(_ transfer: Transfer) -> some View {
+    private func transferRow(_ transfer: Transfer, currencyCode: String) -> some View {
         HStack(spacing: 10) {
             HStack(spacing: 4) {
                 avatar(for: transfer.fromID)
@@ -409,13 +429,14 @@ struct GroupDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(namer.name(transfer.fromID)) → \(namer.name(transfer.toID))")
                     .font(.subheadline.weight(.medium))
-                Text(Money.format(transfer.cents, currencyCode: group.currencyCode))
+                Text(Money.format(transfer.cents, currencyCode: currencyCode))
                     .font(.amount)
                     .monospacedDigit()
             }
             Spacer(minLength: 8)
             Button {
-                paymentDraft = PaymentDraft(fromID: transfer.fromID, toID: transfer.toID, cents: transfer.cents)
+                paymentDraft = PaymentDraft(fromID: transfer.fromID, toID: transfer.toID, cents: transfer.cents,
+                                            currencyCode: currencyCode)
             } label: {
                 Label("Record", systemImage: "checkmark")
                     .font(.subheadline.weight(.semibold))
@@ -532,13 +553,15 @@ struct GroupDetailView: View {
 
     /// Neutral names (no "You") since this goes to the group chat.
     private var settlementText: String {
-        let settlement = SettlementEngine.settlement(for: group)
         var lines = ["\(group.name) — settle up"]
-        if settlement.transfers.isEmpty {
+        let settlements = SettlementEngine.settlements(for: group)
+        if settlements.allSatisfy(\.isSettled) {
             lines.append("All settled up.")
         } else {
-            for transfer in settlement.transfers {
-                lines.append("\(group.name(of: transfer.fromID)) → \(group.name(of: transfer.toID)): \(Money.format(transfer.cents, currencyCode: group.currencyCode))")
+            for settlement in settlements {
+                for transfer in settlement.transfers {
+                    lines.append("\(group.name(of: transfer.fromID)) → \(group.name(of: transfer.toID)): \(Money.format(transfer.cents, currencyCode: settlement.currencyCode))")
+                }
             }
         }
         lines.append("")
@@ -554,12 +577,15 @@ struct PaymentDraft: Identifiable {
     var fromID: Person.ID?
     var toID: Person.ID?
     var cents: Int
+    /// nil means the group's currency.
+    var currencyCode: String?
     var existing: Payment?
 
-    init(fromID: Person.ID? = nil, toID: Person.ID? = nil, cents: Int = 0, existing: Payment? = nil) {
+    init(fromID: Person.ID? = nil, toID: Person.ID? = nil, cents: Int = 0, currencyCode: String? = nil, existing: Payment? = nil) {
         self.fromID = existing?.fromID ?? fromID
         self.toID = existing?.toID ?? toID
         self.cents = existing?.cents ?? cents
+        self.currencyCode = existing?.currencyCode ?? currencyCode
         self.existing = existing
     }
 }

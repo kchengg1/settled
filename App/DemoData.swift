@@ -33,20 +33,23 @@ enum DemoData {
         var tacos = ExpenseGroup(name: "Taco Tuesday", kind: .event, people: [alex, taylor, robin])
         tacos.apply(.addEntry(.expense(Expense(title: "Tacos & margs", payerID: taylor.id, amountCents: 6300,
                                                date: .now.addingTimeInterval(-3 * day),
-                                               split: .equally(participantIDs: [alex.id, taylor.id, robin.id])))),
+                                               split: .equally(participantIDs: [alex.id, taylor.id, robin.id]),
+                                               category: .drinks))),
                     by: alex.id, at: .now.addingTimeInterval(-3 * day))
         context.insert(SavedTrip(group: tacos))
 
         var lisbon = ExpenseGroup(name: "Lisbon Trip", kind: .trip, people: [alex, sam, jordan])
         let entries: [(LedgerEntry, TimeInterval)] = [
             (.expense(Expense(title: "Airbnb", payerID: sam.id, amountCents: 42000, date: .now.addingTimeInterval(-6 * day),
-                              split: .equally(participantIDs: [alex.id, sam.id, jordan.id]))), -6 * day),
-            (.expense(Expense(title: "Seafood dinner", payerID: alex.id, amountCents: 12600, date: .now.addingTimeInterval(-5 * day),
-                              split: .equally(participantIDs: [alex.id, sam.id, jordan.id]))), -5 * day),
+                              split: .equally(participantIDs: [alex.id, sam.id, jordan.id]), category: .lodging)), -6 * day),
+            (.expense(Expense(title: "Seafood dinner", payers: [alex.id: 10000, sam.id: 2600], amountCents: 12600,
+                              date: .now.addingTimeInterval(-5 * day),
+                              split: .adjustment(participantIDs: [alex.id, sam.id, jordan.id], adjustments: [jordan.id: 1500]),
+                              category: .food, notes: "Jordan had the lobster.")), -5 * day),
             (.expense(Expense(title: "Tram tickets", payerID: jordan.id, amountCents: 1800, date: .now.addingTimeInterval(-4 * day),
-                              split: .equally(participantIDs: [alex.id, sam.id, jordan.id]))), -4 * day),
+                              split: .equally(participantIDs: [alex.id, sam.id, jordan.id]), category: .transport)), -4 * day),
             (.expense(Expense(title: "Pastéis de nata", payerID: alex.id, amountCents: 900, date: .now.addingTimeInterval(-2 * day),
-                              split: .equally(participantIDs: [alex.id, sam.id]))), -2 * day),
+                              split: .equally(participantIDs: [alex.id, sam.id]), category: .food)), -2 * day),
             (.payment(Payment(fromID: jordan.id, toID: sam.id, cents: 5000, date: .now.addingTimeInterval(-1 * day),
                               method: .venmo)), -1 * day),
         ]

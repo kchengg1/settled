@@ -11,7 +11,7 @@ import Foundation
 public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
     /// Bumped when the JSON shape changes; `init(from:)` decodes every
     /// version ever shipped.
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
 
     public let id: UUID
     public var name: String
@@ -107,13 +107,15 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
     @discardableResult
     public mutating func apply(_ change: GroupChange, by actorID: Person.ID? = nil, at now: Date = .now) -> Bool {
         switch change {
-        case .addEntry(let entry):
+        case .addEntry(let added):
+            let entry = normalized(added)
             guard self.entry(withID: entry.id) == nil else { return false }
             entries.append(entry)
             record(.entryAdded, subject: entry.id, actor: actorID, at: now,
                    summary: addedSummary(for: entry))
 
-        case .updateEntry(var entry):
+        case .updateEntry(let updated):
+            var entry = normalized(updated)
             guard let index = entries.firstIndex(where: { $0.id == entry.id }) else { return false }
             let before = entries[index]
             entry.isDeleted = before.isDeleted
@@ -167,8 +169,61 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
             kind = newKind
             record(.settingsChanged, subject: nil, actor: actorID, at: now,
                    summary: "Changed the group type to \(newKind.rawValue)")
+
+        case .setCurrency(let code):
+            let trimmed = code.trimmingCharacters(in: .whitespaces).uppercased()
+            guard trimmed.count == 3, trimmed != currencyCode else { return false }
+            currencyCode = trimmed
+            record(.settingsChanged, subject: nil, actor: actorID, at: now,
+                   summary: "Changed the group currency to \(trimmed)")
         }
         return true
+    }
+
+    /// An expense with no currency is in the group's currency.
+    private func normalized(_ entry: LedgerEntry) -> LedgerEntry {
+        guard case .expense(var expense) = entry, expense.currencyCode.isEmpty else { return entry }
+        expense.currencyCode = currencyCode
+        return .expense(expense)
+    }
+
+    // MARK: - Recurring expenses
+
+    /// Creates the copies of every recurring expense that have come due,
+    /// dated on their due dates, and advances each rule. Idempotent: running
+    /// it twice at the same moment creates nothing the second time. Returns
+    /// how many expenses were created. There is no server to do this, so
+    /// the app calls it whenever it comes to the foreground.
+    @discardableResult
+    public mutating func materializeRecurring(now: Date = .now, calendar: Calendar = .current, by actorID: Person.ID? = nil) -> Int {
+        var created = 0
+        for index in entries.indices {
+            guard case .expense(var template) = entries[index], !template.isDeleted,
+                  var rule = template.recurrence else { continue }
+            var safety = 0
+            while rule.nextDate <= now && safety < 120 {
+                let copy = Expense(
+                    title: template.title,
+                    payers: template.payers,
+                    amountCents: template.amountCents,
+                    currencyCode: template.currencyCode,
+                    date: rule.nextDate,
+                    split: template.split,
+                    category: template.category,
+                    notes: template.notes,
+                    conversion: template.conversion,
+                    recurringSourceID: template.id,
+                    createdAt: now
+                )
+                apply(.addEntry(.expense(copy)), by: actorID, at: now)
+                rule = rule.advanced(using: calendar)
+                created += 1
+                safety += 1
+            }
+            template.recurrence = rule
+            entries[index] = .expense(template)
+        }
+        return created
     }
 
     private mutating func record(_ kind: ActivityEvent.Kind, subject: UUID?, actor: Person.ID?, at: Date,
@@ -188,7 +243,10 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
     private func addedSummary(for entry: LedgerEntry) -> String {
         switch entry {
         case .expense(let e):
-            return "Added \"\(e.title)\": \(Money.format(e.amountCents, currencyCode: currencyCode)), paid by \(name(of: e.payerID))"
+            let payers = e.payerIDs.map { name(of: $0) }
+            let who = payers.count <= 1 ? (payers.first ?? "?") : payers.dropLast().joined(separator: ", ") + " and " + payers.last!
+            let code = e.currencyCode.isEmpty ? currencyCode : e.currencyCode
+            return "Added \"\(e.title)\": \(Money.format(e.amountCents, currencyCode: code)), paid by \(who)"
         case .payment(let p):
             return "\(name(of: p.fromID)) paid \(name(of: p.toID)) \(Money.format(p.cents, currencyCode: p.currencyCode))"
         }
@@ -213,11 +271,19 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
         // Trips saved before the toggle existed always showed minimized
         // transfers, so they keep doing that.
         simplifyDebts = try c.decodeIfPresent(Bool.self, forKey: .simplifyDebts) ?? true
+        let decodedEntries: [LedgerEntry]
         if let entries = try c.decodeIfPresent([LedgerEntry].self, forKey: .entries) {
-            self.entries = entries
+            decodedEntries = entries
         } else {
             let expenses = try c.decodeIfPresent([Expense].self, forKey: .expenses) ?? []
-            entries = expenses.map { .expense($0) }
+            decodedEntries = expenses.map { .expense($0) }
+        }
+        // Expenses saved before per-expense currencies are in the group's.
+        let code = currencyCode
+        entries = decodedEntries.map { entry in
+            guard case .expense(var expense) = entry, expense.currencyCode.isEmpty else { return entry }
+            expense.currencyCode = code
+            return .expense(expense)
         }
         activity = try c.decodeIfPresent([ActivityEvent].self, forKey: .activity) ?? []
         schemaVersion = Self.currentSchemaVersion

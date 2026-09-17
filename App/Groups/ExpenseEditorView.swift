@@ -1,9 +1,12 @@
 import SwiftUI
+import PhotosUI
 import SplitChecksCore
 
-/// Add or edit a group expense: what, how much, who paid, and how it's
-/// split. Editing keeps the expense's identity so the activity trail and
-/// balances line up.
+/// Add or edit a group expense: what, how much and in which currency, who
+/// paid (one or several), how it's split, plus category, notes, a receipt
+/// photo, and repeats. Editing keeps the expense's identity so the activity
+/// trail and balances line up. Validation comes from the core package and
+/// shows inline.
 struct ExpenseEditorView: View {
     let group: ExpenseGroup
     let existing: Expense?
@@ -13,17 +16,33 @@ struct ExpenseEditorView: View {
 
     @State private var title: String
     @State private var amountCents: Int
-    @State private var payerID: Person.ID
+    @State private var currencyCode: String
     @State private var date: Date
+    @State private var category: ExpenseCategory
+    @State private var notes: String
+
+    @State private var multiplePayers: Bool
+    @State private var singlePayerID: Person.ID
+    @State private var payerAmounts: [Person.ID: Int]
+
     @State private var mode: SplitMode
     @State private var selected: Set<Person.ID>
     @State private var weights: [Person.ID: Int]
     @State private var exact: [Person.ID: Int]
+    @State private var adjustments: [Person.ID: Int]
+
+    @State private var conversionCents: Int
+    @State private var frequency: RecurrenceRule.Frequency?
+    @State private var receiptImageID: UUID?
+    @State private var receiptImage: UIImage?
+    @State private var receiptChanged = false
+    @State private var photoItem: PhotosPickerItem?
 
     enum SplitMode: String, CaseIterable {
         case equally = "Equally"
         case shares = "Shares"
         case exact = "Exact"
+        case adjust = "Adjust"
     }
 
     init(group: ExpenseGroup, existing: Expense?, meID: Person.ID?, onSave: @escaping (Expense) -> Void) {
@@ -36,13 +55,20 @@ struct ExpenseEditorView: View {
         let defaultPayer = meID.flatMap { id in everyone.contains(id) ? id : nil } ?? everyone.first ?? UUID()
         _title = State(initialValue: existing?.title ?? "")
         _amountCents = State(initialValue: existing?.amountCents ?? 0)
-        _payerID = State(initialValue: existing?.payerID ?? defaultPayer)
+        _currencyCode = State(initialValue: existing.map { $0.currencyCode.isEmpty ? group.currencyCode : $0.currencyCode } ?? group.currencyCode)
         _date = State(initialValue: existing?.date ?? .now)
+        _category = State(initialValue: existing?.category ?? .general)
+        _notes = State(initialValue: existing?.notes ?? "")
+
+        _multiplePayers = State(initialValue: existing?.isMultiPayer ?? false)
+        _singlePayerID = State(initialValue: existing?.payerID ?? defaultPayer)
+        _payerAmounts = State(initialValue: existing?.payers ?? [:])
 
         var mode: SplitMode = .equally
         var selected = Set(everyone)
         var weights = Dictionary(uniqueKeysWithValues: everyone.map { ($0, 1) })
         var exact: [Person.ID: Int] = [:]
+        var adjustments: [Person.ID: Int] = [:]
         if let existing {
             switch existing.split {
             case .equally(let ids):
@@ -54,55 +80,201 @@ struct ExpenseEditorView: View {
             case .exactCents(let map):
                 mode = .exact
                 exact = map
+            case .adjustment(let ids, let map):
+                mode = .adjust
+                selected = Set(ids)
+                adjustments = map
             }
         }
         _mode = State(initialValue: mode)
         _selected = State(initialValue: selected)
         _weights = State(initialValue: weights)
         _exact = State(initialValue: exact)
+        _adjustments = State(initialValue: adjustments)
+
+        _conversionCents = State(initialValue: existing?.conversion?.amountCents ?? 0)
+        _frequency = State(initialValue: existing?.recurrence?.frequency)
+        _receiptImageID = State(initialValue: existing?.receiptImageID)
+        _receiptImage = State(initialValue: existing?.receiptImageID.flatMap(ReceiptImageStore.load))
     }
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    TextField("What for?", text: $title)
-                    HStack {
-                        Text("Amount")
-                        Spacer()
-                        CurrencyField(title: "0.00", cents: $amountCents).frame(width: 110)
-                    }
-                    Picker("Paid by", selection: $payerID) {
-                        ForEach(group.people) { Text(name($0)).tag($0.id) }
-                    }
-                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                basicsSection
+                paidBySection
+                splitSection
+                if currencyCode != group.currencyCode {
+                    conversionSection
                 }
-
-                Section("Split") {
-                    Picker("Split", selection: $mode) {
-                        ForEach(SplitMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-
-                    ForEach(group.people) { person in
-                        splitRow(person)
-                    }
-
-                    if let hint = remainingHint {
-                        Text(hint).font(.footnote).foregroundStyle(hintIsError ? .red : .secondary)
-                    }
-                }
+                detailsSection
+                receiptSection
+                repeatsSection
             }
             .navigationTitle(existing == nil ? "New expense" : "Edit expense")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(existing == nil ? "Add" : "Save") { save() }.disabled(!isValid)
+                    Button(existing == nil ? "Add" : "Save") { save() }.disabled(!errors.isEmpty)
                 }
+            }
+            .onChange(of: photoItem) { loadPhoto() }
+        }
+    }
+
+    private var basicsSection: some View {
+        Section {
+            HStack(spacing: 12) {
+                IconBadge(systemImage: category.systemImage, color: Theme.accent, size: 36)
+                TextField("What for?", text: $title)
+                    .font(.cardTitle)
+            }
+            HStack {
+                Text("Amount")
+                Spacer()
+                Text(currencyCode)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                CurrencyField(title: "0.00", cents: $amountCents).frame(width: 110)
+            }
+            Picker("Currency", selection: $currencyCode) {
+                ForEach(Currencies.options(including: currencyCode), id: \.self) { code in
+                    Text("\(code) · \(Currencies.name(code))").tag(code)
+                }
+            }
+            Picker("Category", selection: $category) {
+                ForEach(ExpenseCategory.allCases, id: \.self) { category in
+                    Label(category.title, systemImage: category.systemImage).tag(category)
+                }
+            }
+            DatePicker("Date", selection: $date, displayedComponents: .date)
+        }
+    }
+
+    private var paidBySection: some View {
+        Section {
+            if multiplePayers {
+                ForEach(group.people) { person in
+                    HStack {
+                        Avatar(person: person, size: 28)
+                        Text(name(person))
+                        Spacer()
+                        CurrencyField(title: "0.00", cents: Binding(
+                            get: { payerAmounts[person.id] ?? 0 },
+                            set: { payerAmounts[person.id] = $0 }
+                        ))
+                        .frame(width: 100)
+                    }
+                }
+            } else {
+                Picker("Paid by", selection: $singlePayerID) {
+                    ForEach(group.people) { Text(name($0)).tag($0.id) }
+                }
+            }
+            Toggle("Multiple people paid", isOn: $multiplePayers)
+        } header: {
+            Text("Paid by")
+        } footer: {
+            if multiplePayers, let hint = payersHint {
+                Text(hint).foregroundStyle(.red)
             }
         }
     }
+
+    private var splitSection: some View {
+        Section {
+            Picker("Split", selection: $mode) {
+                ForEach(SplitMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+
+            ForEach(group.people) { person in
+                splitRow(person)
+            }
+        } header: {
+            Text("Split")
+        } footer: {
+            if let hint = splitHint {
+                Text(hint).foregroundStyle(splitHintIsError ? .red : .secondary)
+            } else if mode == .adjust {
+                Text("Everyone splits what's left equally after their adjustments.")
+            }
+        }
+    }
+
+    private var conversionSection: some View {
+        Section {
+            HStack {
+                Text("Counts as")
+                Spacer()
+                Text(group.currencyCode)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                CurrencyField(title: "0.00", cents: $conversionCents).frame(width: 110)
+            }
+        } header: {
+            Text("Conversion")
+        } footer: {
+            Text(conversionCents > 0
+                 ? "Balances will count this expense as \(Money.format(conversionCents, currencyCode: group.currencyCode))."
+                 : "Optional. Leave empty to keep a separate \(currencyCode) balance for the group.")
+        }
+    }
+
+    private var detailsSection: some View {
+        Section("Notes") {
+            TextField("Anything worth remembering", text: $notes, axis: .vertical)
+                .lineLimit(1...4)
+        }
+    }
+
+    private var receiptSection: some View {
+        Section {
+            if let receiptImage {
+                Image(uiImage: receiptImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 220)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                Button(role: .destructive) {
+                    self.receiptImage = nil
+                    receiptChanged = true
+                } label: {
+                    Label("Remove photo", systemImage: "trash")
+                }
+            }
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                Label(receiptImage == nil ? "Attach a receipt photo" : "Replace photo", systemImage: "photo")
+            }
+        } header: {
+            Text("Receipt")
+        } footer: {
+            Text("Stored on this phone only.")
+        }
+    }
+
+    private var repeatsSection: some View {
+        Section {
+            Picker("Repeats", selection: $frequency) {
+                Text("Never").tag(RecurrenceRule.Frequency?.none)
+                ForEach(RecurrenceRule.Frequency.allCases, id: \.self) { f in
+                    Text(f.title).tag(RecurrenceRule.Frequency?.some(f))
+                }
+            }
+        } footer: {
+            if let frequency {
+                let next = existing?.recurrence?.nextDate ?? RecurrenceRule.firstNextDate(after: date, frequency: frequency)
+                Text("Next on \(next.formatted(date: .abbreviated, time: .omitted)). Copies are added when you open the app.")
+            }
+        }
+    }
+
+    // MARK: - Rows
 
     private func name(_ person: Person) -> String {
         person.id == meID ? "You" : person.name
@@ -111,19 +283,32 @@ struct ExpenseEditorView: View {
     @ViewBuilder
     private func splitRow(_ person: Person) -> some View {
         switch mode {
-        case .equally:
-            Button {
-                if selected.contains(person.id) { selected.remove(person.id) } else { selected.insert(person.id) }
-            } label: {
-                HStack {
-                    Image(systemName: selected.contains(person.id) ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(selected.contains(person.id) ? ChipPalette.color(for: person) : .secondary)
-                    Text(name(person)).foregroundStyle(.primary)
-                    Spacer()
-                    if selected.contains(person.id), !selected.isEmpty {
-                        Text(Money.format(equalShare(for: person), currencyCode: group.currencyCode))
-                            .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+        case .equally, .adjust:
+            HStack {
+                Button {
+                    if selected.contains(person.id) { selected.remove(person.id) } else { selected.insert(person.id) }
+                } label: {
+                    HStack {
+                        Image(systemName: selected.contains(person.id) ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(selected.contains(person.id) ? ChipPalette.color(for: person) : .secondary)
+                        Text(name(person)).foregroundStyle(.primary)
+                        Spacer()
                     }
+                }
+                .buttonStyle(.plain)
+                if mode == .adjust {
+                    if selected.contains(person.id) {
+                        Text("±")
+                            .foregroundStyle(.secondary)
+                        CurrencyField(title: "0.00", cents: Binding(
+                            get: { adjustments[person.id] ?? 0 },
+                            set: { adjustments[person.id] = $0 }
+                        ))
+                        .frame(width: 90)
+                    }
+                } else if selected.contains(person.id), !selected.isEmpty {
+                    Text(Money.format(equalShare(for: person), currencyCode: currencyCode))
+                        .font(.caption).monospacedDigit().foregroundStyle(.secondary)
                 }
             }
         case .shares:
@@ -150,63 +335,102 @@ struct ExpenseEditorView: View {
         return SplitEngine.apportion(amountCents, weights: Array(repeating: 1, count: ids.count))[index]
     }
 
-    // MARK: - Validation
+    // MARK: - Draft & validation
 
-    private var exactSum: Int { group.people.reduce(0) { $0 + (exact[$1.id] ?? 0) } }
-    private var weightSum: Int { weights.values.reduce(0, +) }
+    private var payers: [Person.ID: Int] {
+        if multiplePayers {
+            return payerAmounts.filter { $0.value != 0 }
+        }
+        return [singlePayerID: amountCents]
+    }
 
-    private var isValid: Bool {
-        guard amountCents != 0, group.people.contains(where: { $0.id == payerID }) else { return false }
+    private var split: SplitMethod {
+        let ids = group.people.map(\.id).filter { selected.contains($0) }
         switch mode {
-        case .equally: return !selected.isEmpty
-        case .shares: return weightSum > 0
-        case .exact: return exactSum == amountCents
+        case .equally: return .equally(participantIDs: ids)
+        case .shares: return .shares(weights.filter { $0.value > 0 })
+        case .exact: return .exactCents(exact.filter { $0.value != 0 })
+        case .adjust: return .adjustment(participantIDs: ids, adjustments: adjustments.filter { ids.contains($0.key) && $0.value != 0 })
         }
     }
 
-    private var remainingHint: String? {
-        switch mode {
-        case .equally:
-            return selected.isEmpty ? "Select at least one person." : nil
-        case .shares:
-            return weightSum == 0 ? "Give at least one person a share." : nil
-        case .exact:
-            let diff = amountCents - exactSum
-            if diff == 0 { return nil }
-            let word = diff > 0 ? "left to assign" : "over"
-            return "\(Money.format(abs(diff), currencyCode: group.currencyCode)) \(word)."
+    private var draft: Expense {
+        let cleanTitle = title.trimmingCharacters(in: .whitespaces)
+        let conversion = currencyCode != group.currencyCode && conversionCents != 0
+            ? ConvertedAmount(currencyCode: group.currencyCode, amountCents: conversionCents) : nil
+        let recurrence: RecurrenceRule? = frequency.map { (f: RecurrenceRule.Frequency) -> RecurrenceRule in
+            if let old = existing?.recurrence, old.frequency == f { return old }
+            return RecurrenceRule(frequency: f, nextDate: RecurrenceRule.firstNextDate(after: date, frequency: f))
         }
+        return Expense(
+            id: existing?.id ?? UUID(),
+            title: cleanTitle,
+            payers: payers,
+            amountCents: amountCents,
+            currencyCode: currencyCode,
+            date: date,
+            split: split,
+            category: category,
+            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
+            receiptImageID: receiptImageID,
+            conversion: conversion,
+            recurrence: recurrence,
+            recurringSourceID: existing?.recurringSourceID,
+            createdAt: existing?.createdAt ?? .now,
+            updatedAt: .now
+        )
     }
 
-    private var hintIsError: Bool {
-        switch mode {
-        case .exact: return exactSum != amountCents
-        default: return true
+    private var errors: [ExpenseValidationError] {
+        ExpenseValidator.validate(draft, in: group)
+    }
+
+    private var payersHint: String? {
+        for error in errors {
+            if case .payersDoNotSumToAmount(let diff) = error {
+                if diff > 0 { return "\(Money.format(diff, currencyCode: currencyCode)) left to cover." }
+                return "\(Money.format(-diff, currencyCode: currencyCode)) more than the amount."
+            }
+        }
+        return nil
+    }
+
+    private var splitHint: String? {
+        for error in errors {
+            switch error {
+            case .noParticipants: return "Select at least one person."
+            case .noPositiveWeights: return "Give at least one person a share."
+            case .exactSharesDoNotSumToAmount(let diff):
+                return "\(Money.format(abs(diff), currencyCode: currencyCode)) \(diff > 0 ? "left to assign" : "over")."
+            case .adjustmentsExceedAmount(let by):
+                return "Adjustments exceed the amount by \(Money.format(by, currencyCode: currencyCode))."
+            default: continue
+            }
+        }
+        return nil
+    }
+
+    private var splitHintIsError: Bool { splitHint != nil }
+
+    // MARK: - Actions
+
+    private func loadPhoto() {
+        guard let photoItem else { return }
+        self.photoItem = nil
+        Task { @MainActor in
+            if let data = try? await photoItem.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                receiptImage = image
+                receiptChanged = true
+            }
         }
     }
 
     private func save() {
-        let split: SplitMethod
-        switch mode {
-        case .equally:
-            let ids = group.people.map(\.id).filter { selected.contains($0) }
-            split = .equally(participantIDs: ids)
-        case .shares:
-            split = .shares(weights.filter { $0.value > 0 })
-        case .exact:
-            split = .exactCents(exact.filter { $0.value != 0 })
+        var expense = draft
+        if receiptChanged {
+            if let old = receiptImageID { ReceiptImageStore.delete(old) }
+            expense.receiptImageID = receiptImage.flatMap(ReceiptImageStore.save)
         }
-        let cleanTitle = title.trimmingCharacters(in: .whitespaces)
-        let expense = Expense(
-            id: existing?.id ?? UUID(),
-            title: cleanTitle.isEmpty ? "Expense" : cleanTitle,
-            payerID: payerID,
-            amountCents: amountCents,
-            date: date,
-            split: split,
-            createdAt: existing?.createdAt ?? .now,
-            updatedAt: .now
-        )
         onSave(expense)
         dismiss()
     }
