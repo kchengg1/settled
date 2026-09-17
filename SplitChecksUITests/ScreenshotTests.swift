@@ -49,6 +49,16 @@ final class ScreenshotTests: XCTestCase {
         capture("06-expense-detail")
         app.navigationBars.buttons.firstMatch.tap()
 
+        // 6) An itemized expense from a scanned receipt.
+        let tasca = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Tasca do Chico"))
+            .firstMatch
+        XCTAssertTrue(tasca.waitForExistence(timeout: 10))
+        tasca.tap()
+        XCTAssertTrue(app.navigationBars["Tasca do Chico"].waitForExistence(timeout: 10))
+        capture("07-itemized-expense")
+        app.navigationBars.buttons.firstMatch.tap()
+
         // 5) The cross-group activity feed.
         app.tabBars.buttons["Activity"].tap()
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))

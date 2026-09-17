@@ -56,6 +56,30 @@ enum DemoData {
         for (entry, offset) in entries {
             lisbon.apply(.addEntry(entry), by: alex.id, at: .now.addingTimeInterval(offset))
         }
+
+        // A scanned receipt that became an itemized expense: everyone owes
+        // exactly their dishes plus tax and tip.
+        let bacalhau = LineItem(name: "Bacalhau à Brás", priceCents: 1850)
+        let sardines = LineItem(name: "Grilled sardines", priceCents: 1600)
+        let wine = LineItem(name: "Vinho verde", priceCents: 2200)
+        let dessert = LineItem(name: "Pastel de nata", priceCents: 350)
+        let bill = BillSnapshot(
+            items: [bacalhau, sardines, wine, dessert],
+            people: [alex, sam, jordan],
+            assignments: [
+                Assignment(itemID: bacalhau.id, personID: alex.id),
+                Assignment(itemID: sardines.id, personID: sam.id),
+                Assignment(itemID: wine.id, personID: alex.id),
+                Assignment(itemID: wine.id, personID: sam.id),
+                Assignment(itemID: wine.id, personID: jordan.id),
+                Assignment(itemID: dessert.id, personID: jordan.id),
+            ],
+            taxCents: 0,
+            tipCents: 600
+        )
+        let tasca = Expense.itemized(from: bill, title: "Tasca do Chico", payers: [sam.id: 0],
+                                     date: .now.addingTimeInterval(-3 * day), notes: "Fado night.")
+        lisbon.apply(.addEntry(.expense(tasca)), by: alex.id, at: .now.addingTimeInterval(-3 * day))
         context.insert(SavedTrip(group: lisbon))
     }
 
