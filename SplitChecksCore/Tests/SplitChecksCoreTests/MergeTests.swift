@@ -37,8 +37,10 @@ final class MergeTests: XCTestCase {
     }
 
     func testMergeIsIdempotentAndCommutative() {
-        var mine = base()
-        var theirs = base()
+        // Both phones start from the same group, then diverge.
+        let original = base()
+        var mine = original
+        var theirs = original
         mine.apply(.addEntry(.expense(Expense(title: "Taxi", payerID: ben.id, amountCents: 3000, date: t0,
                                               split: .equally(participantIDs: [ana.id, ben.id])))), at: t0.addingTimeInterval(60))
         theirs.apply(.addMember(cy), at: t0.addingTimeInterval(30))
@@ -97,8 +99,9 @@ final class MergeTests: XCTestCase {
     }
 
     func testSettingsAndRenamesTakeTheLatestChange() {
-        var mine = base()
-        var theirs = base()
+        let original = base()
+        var mine = original
+        var theirs = original
         mine.apply(.rename("My trip"), at: t0.addingTimeInterval(10))
         theirs.apply(.rename("Our trip"), at: t0.addingTimeInterval(20))
         theirs.apply(.setSimplifyDebts(true), at: t0.addingTimeInterval(20))
@@ -108,7 +111,7 @@ final class MergeTests: XCTestCase {
         assertEquivalent(mine.merged(with: theirs), theirs.merged(with: mine))
 
         // A person renamed on the other phone comes across.
-        var renamed = base()
+        var renamed = original
         var person = renamed.people[1]
         person.name = "Benjamin"
         person.updatedAt = t0.addingTimeInterval(500)
@@ -118,8 +121,9 @@ final class MergeTests: XCTestCase {
     }
 
     func testSummaryDescribesWhatArrived() {
-        var mine = base()
-        var theirs = base()
+        let original = base()
+        let mine = original
+        var theirs = original
         theirs.apply(.addEntry(.expense(Expense(title: "Dinner", payerID: ben.id, amountCents: 4000, date: t0,
                                                 split: .equally(participantIDs: [ana.id, ben.id])))), at: t0.addingTimeInterval(10))
         theirs.apply(.addEntry(.payment(Payment(fromID: ben.id, toID: ana.id, cents: 1000, date: t0))), at: t0.addingTimeInterval(20))
@@ -163,8 +167,9 @@ final class MergeTests: XCTestCase {
 
     func testMergingConcurrentPaymentsKeepsBothAndBalancesStayExact() {
         // Both phones record a settle-up at the same time; both count.
-        var mine = base()
-        var theirs = base()
+        let original = base()
+        var mine = original
+        var theirs = original
         mine.apply(.addEntry(.payment(Payment(fromID: ben.id, toID: ana.id, cents: 4000, date: t0))), at: t0.addingTimeInterval(10))
         theirs.apply(.addEntry(.payment(Payment(fromID: ben.id, toID: ana.id, cents: 6000, date: t0))), at: t0.addingTimeInterval(10))
 
