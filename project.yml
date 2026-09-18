@@ -19,16 +19,35 @@ targets:
       - App
     dependencies:
       - package: SplitChecksCore
+    # An explicit Info.plist (rather than the generated one) because the
+    # shared-group file type needs nested declarations that the
+    # INFOPLIST_KEY_* build settings can't express.
+    info:
+      path: SplitChecks-Info.plist
+      properties:
+        # Standard Apple frameworks only (HTTPS-level crypto) — exempt, so
+        # TestFlight skips the export-compliance question on every build.
+        ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: "Split Checks uses the camera to scan receipts. Photos are processed on this device and never leave it."
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        # Groups shared as files: we own the type, so we export it and
+        # register as its editor.
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.kchengg1.splitchecks.group
+            UTTypeDescription: Split Checks Group
+            UTTypeConformsTo: [public.json]
+            UTTypeTagSpecification:
+              public.filename-extension: [splitchecks]
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Split Checks Group
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSItemContentTypes: [com.kchengg1.splitchecks.group]
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        GENERATE_INFOPLIST_FILE: YES
-        # Standard Apple frameworks only (HTTPS-level crypto) — exempt, so
-        # TestFlight skips the export-compliance question on every build.
-        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
-        INFOPLIST_KEY_NSCameraUsageDescription: "Split Checks uses the camera to scan receipts. Photos are processed on this device and never leave it."
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        GENERATE_INFOPLIST_FILE: NO
         PRODUCT_BUNDLE_IDENTIFIER: com.kchengg1.splitchecks
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"

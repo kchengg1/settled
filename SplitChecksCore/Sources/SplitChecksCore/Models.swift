@@ -31,25 +31,33 @@ public struct Person: Identifiable, Hashable, Codable, Sendable {
     public var name: String
     public var colorIndex: Int
     public var handles: PaymentHandles
+    /// When this person's details last changed. Only used to pick a winner
+    /// when two devices' copies of the same person disagree.
+    public var updatedAt: Date
 
-    public init(id: UUID = UUID(), name: String, colorIndex: Int = 0, handles: PaymentHandles = PaymentHandles()) {
+    public init(id: UUID = UUID(), name: String, colorIndex: Int = 0,
+                handles: PaymentHandles = PaymentHandles(), updatedAt: Date = .now) {
         self.id = id
         self.name = name
         self.colorIndex = colorIndex
         self.handles = handles
+        self.updatedAt = updatedAt
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, colorIndex, handles
+        case id, name, colorIndex, handles, updatedAt
     }
 
-    /// Payloads written before `handles` existed decode with empty handles.
+    /// Payloads written before `handles` and `updatedAt` existed decode with
+    /// empty handles and the earliest possible timestamp, so any later edit
+    /// on another device wins a merge.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         colorIndex = try container.decode(Int.self, forKey: .colorIndex)
         handles = try container.decodeIfPresent(PaymentHandles.self, forKey: .handles) ?? PaymentHandles()
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? .distantPast
     }
 }
 

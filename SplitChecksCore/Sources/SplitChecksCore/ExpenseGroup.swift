@@ -11,7 +11,7 @@ import Foundation
 public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
     /// Bumped when the JSON shape changes; `init(from:)` decodes every
     /// version ever shipped.
-    public static let currentSchemaVersion = 3
+    public static let currentSchemaVersion = 4
 
     public let id: UUID
     public var name: String
@@ -25,6 +25,9 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
     public var entries: [LedgerEntry]
     public var activity: [ActivityEvent]
     public var createdAt: Date
+    /// When name, kind, currency, or the simplify toggle last changed.
+    /// Merging takes the settings from whichever copy changed them last.
+    public var settingsUpdatedAt: Date
     public var schemaVersion: Int
 
     public init(
@@ -47,6 +50,7 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
         self.entries = entries
         self.activity = activity
         self.createdAt = createdAt
+        self.settingsUpdatedAt = createdAt
         self.schemaVersion = Self.currentSchemaVersion
     }
 
@@ -159,18 +163,21 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
             let trimmed = newName.trimmingCharacters(in: .whitespaces)
             guard !trimmed.isEmpty, trimmed != name else { return false }
             name = trimmed
+            settingsUpdatedAt = now
             record(.groupRenamed, subject: nil, actor: actorID, at: now,
                    summary: "Renamed the group to \"\(trimmed)\"")
 
         case .setSimplifyDebts(let on):
             guard on != simplifyDebts else { return false }
             simplifyDebts = on
+            settingsUpdatedAt = now
             record(.settingsChanged, subject: nil, actor: actorID, at: now,
                    summary: on ? "Turned on simplify debts" : "Turned off simplify debts")
 
         case .setKind(let newKind):
             guard newKind != kind else { return false }
             kind = newKind
+            settingsUpdatedAt = now
             record(.settingsChanged, subject: nil, actor: actorID, at: now,
                    summary: "Changed the group type to \(newKind.rawValue)")
 
@@ -178,6 +185,7 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
             let trimmed = code.trimmingCharacters(in: .whitespaces).uppercased()
             guard trimmed.count == 3, trimmed != currencyCode else { return false }
             currencyCode = trimmed
+            settingsUpdatedAt = now
             record(.settingsChanged, subject: nil, actor: actorID, at: now,
                    summary: "Changed the group currency to \(trimmed)")
         }
@@ -259,7 +267,8 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
     // MARK: - Codable (every shipped version)
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, kind, currencyCode, simplifyDebts, people, entries, activity, createdAt, schemaVersion
+        case id, name, kind, currencyCode, simplifyDebts, people, entries, activity, createdAt
+        case settingsUpdatedAt, schemaVersion
         /// Version 1 stored a plain expenses array instead of a ledger.
         case expenses
     }
@@ -290,6 +299,7 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
             return .expense(expense)
         }
         activity = try c.decodeIfPresent([ActivityEvent].self, forKey: .activity) ?? []
+        settingsUpdatedAt = try c.decodeIfPresent(Date.self, forKey: .settingsUpdatedAt) ?? createdAt
         schemaVersion = Self.currentSchemaVersion
     }
 
@@ -304,6 +314,7 @@ public struct ExpenseGroup: Identifiable, Hashable, Codable, Sendable {
         try c.encode(entries, forKey: .entries)
         try c.encode(activity, forKey: .activity)
         try c.encode(createdAt, forKey: .createdAt)
+        try c.encode(settingsUpdatedAt, forKey: .settingsUpdatedAt)
         try c.encode(Self.currentSchemaVersion, forKey: .schemaVersion)
     }
 }

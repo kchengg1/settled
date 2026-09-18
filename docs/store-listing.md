@@ -61,6 +61,7 @@ Fast, fair, and quietly private. Split The Bill just does the math so dinner doe
 ---
 
 ## What's New  [for this version — 4000 max]
+• Share a whole group as a file — AirDrop or message it, and both phones merge without losing anyone's edits
 • New Friends tab: what everyone owes you across all your groups, and settle up everything in one tap
 • Hand off to Venmo, PayPal, or Cash App with the amount prefilled; set a reminder to settle
 • Export a group as a spreadsheet, or a per-person reimbursement statement as PDF

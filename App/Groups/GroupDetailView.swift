@@ -189,6 +189,11 @@ struct GroupDetailView: View {
                 Toggle("Simplify debts", isOn: simplifyBinding)
                 Divider()
                 Button {
+                    shareGroupFile()
+                } label: {
+                    Label("Share a copy of this group", systemImage: "square.and.arrow.up.on.square")
+                }
+                Button {
                     exportCSV()
                 } label: {
                     Label("Export spreadsheet (CSV)", systemImage: "tablecells")
@@ -197,6 +202,15 @@ struct GroupDetailView: View {
             } label: {
                 Label("More", systemImage: "ellipsis.circle")
             }
+        }
+    }
+
+    /// Writes the whole group to a `.splitchecks` file for AirDrop or
+    /// Messages. Whoever opens it merges it into their own copy.
+    private func shareGroupFile() {
+        let myName = meID.flatMap { group.person(withID: $0)?.name }
+        if let url = GroupSharing.export(group, exportedBy: myName) {
+            exportFile = ExportFile(url: url)
         }
     }
 

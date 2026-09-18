@@ -39,6 +39,8 @@ struct RootView: View {
     @AppStorage(Me.onboardedKey) private var onboarded = false
     @AppStorage(Me.defaultsKey) private var meIDString = ""
     @State private var showingOnboarding = false
+    @State private var incoming: GroupDocument?
+    @State private var openFailed = false
 
     var body: some View {
         TabView {
@@ -83,6 +85,22 @@ struct RootView: View {
         // always set it later.
         .sheet(isPresented: $showingOnboarding, onDismiss: { onboarded = true }) {
             MeOnboardingView()
+        }
+        // A `.splitchecks` file tapped in Messages, Files, or AirDrop.
+        .onOpenURL { url in
+            if let document = GroupSharing.read(from: url) {
+                incoming = document
+            } else {
+                openFailed = true
+            }
+        }
+        .sheet(item: $incoming) { document in
+            ImportGroupSheet(document: document)
+        }
+        .alert("Couldn't open that file", isPresented: $openFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("It isn't a Split Checks group file, or it's from a newer version of the app.")
         }
     }
 }

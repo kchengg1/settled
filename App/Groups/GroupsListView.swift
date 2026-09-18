@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 import SplitChecksCore
 
 /// The Groups tab home: a hero card with your overall position when the
@@ -9,6 +10,9 @@ struct GroupsListView: View {
     @Environment(\.modelContext) private var context
     @AppStorage(Me.defaultsKey) private var meIDString = ""
     @State private var showingNew = false
+    @State private var showingImporter = false
+    @State private var incoming: GroupDocument?
+    @State private var importFailed = false
 
     private var meID: Person.ID? { Me.parse(meIDString) }
 
@@ -48,8 +52,28 @@ struct GroupsListView: View {
         .navigationTitle("Groups")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { showingNew = true } label: { Label("New group", systemImage: "plus") }
+                Menu {
+                    Button { showingNew = true } label: { Label("New group", systemImage: "plus") }
+                    Button { showingImporter = true } label: { Label("Import a shared group", systemImage: "square.and.arrow.down") }
+                } label: {
+                    Label("Add", systemImage: "plus")
+                }
             }
+        }
+        .fileImporter(isPresented: $showingImporter, allowedContentTypes: [.splitChecksGroup, .json]) { result in
+            guard case .success(let url) = result, let document = GroupSharing.read(from: url) else {
+                importFailed = true
+                return
+            }
+            incoming = document
+        }
+        .sheet(item: $incoming) { document in
+            ImportGroupSheet(document: document)
+        }
+        .alert("Couldn't read that file", isPresented: $importFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("It isn't a Split Checks group file, or it's from a newer version of the app.")
         }
         .navigationDestination(for: UUID.self) { id in
             if let saved = groups.first(where: { $0.id == id }) {
