@@ -40,7 +40,10 @@ final class CloudSyncEngine {
 
     /// Built on first use rather than at launch: constructing a CKContainer
     /// needs the iCloud entitlement, which an unsigned build (the simulator
-    /// on CI) doesn't carry.
+    /// on CI) doesn't carry. `@ObservationIgnored` keeps it a real stored
+    /// property — `@Observable` turns the others into computed ones, and
+    /// `lazy` can't be computed.
+    @ObservationIgnored
     private lazy var container = CKContainer(identifier: Self.containerIdentifier)
 
     // MARK: - Availability
