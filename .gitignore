@@ -1,5 +1,7 @@
 # Xcode
 *.xcodeproj
+SplitChecks-Info.plist
+SplitChecks.entitlements
 xcuserdata/
 DerivedData/
 *.xcresult

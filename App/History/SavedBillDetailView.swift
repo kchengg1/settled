@@ -5,6 +5,7 @@ import SplitChecksCore
 /// live summary, recomputed from the stored snapshot.
 struct SavedBillDetailView: View {
     let bill: SavedBill
+    @State private var showingAddToGroup = false
 
     var body: some View {
         Group {
@@ -61,10 +62,20 @@ struct SavedBillDetailView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    showingAddToGroup = true
+                } label: {
+                    Label("Add to a group", systemImage: "person.3")
+                }
                 ShareLink(item: snapshot.summaryText(merchantName: bill.merchantName)) {
                     Label("Share", systemImage: "square.and.arrow.up")
                 }
+            }
+        }
+        .sheet(isPresented: $showingAddToGroup) {
+            AddBillToGroupSheet(snapshot: snapshot, merchantName: bill.merchantName) { savedGroup, _ in
+                bill.groupID = savedGroup.id
             }
         }
     }

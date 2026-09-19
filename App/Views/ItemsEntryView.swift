@@ -29,11 +29,13 @@ struct ItemsEntryView: View {
             }
         }
         .scrollDismissesKeyboard(.interactively)
-        .navigationTitle(model.merchantName ?? "New Bill")
+        .navigationTitle(model.merchantName ?? (model.target == nil ? "New Bill" : "Receipt for \(model.target!.groupName)"))
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                NavigationLink(value: BillStep.history) {
-                    Label("History", systemImage: "clock")
+            if model.target == nil {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink(value: BillStep.history) {
+                        Label("History", systemImage: "clock")
+                    }
                 }
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
@@ -104,23 +106,36 @@ struct ItemsEntryView: View {
 
     private var scanPromptSection: some View {
         Section {
-            if DocumentScannerView.isSupported {
-                Button {
-                    showingScanner = true
-                } label: {
-                    Label("Scan receipt", systemImage: "doc.viewfinder")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+            VStack(spacing: 14) {
+                IconBadge(systemImage: "doc.viewfinder", color: Theme.accent, size: 72)
+                Text("Snap the receipt")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                Text("It's itemized right on your phone. Nothing is uploaded.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                if DocumentScannerView.isSupported {
+                    Button {
+                        showingScanner = true
+                    } label: {
+                        Label("Scan receipt", systemImage: "camera.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
                 }
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    Label("Import a photo", systemImage: "photo")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
             }
-            PhotosPicker(selection: $photoItem, matching: .images) {
-                Label("Import a receipt photo", systemImage: "photo")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 4)
-            }
-        } footer: {
-            Text("Everything stays on your phone — the photo is read on-device and never uploaded.")
+            .padding(20)
+            .frame(maxWidth: .infinity)
+            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .cardRow()
         }
     }
 

@@ -17,7 +17,7 @@ Primary: **Finance**  ·  Secondary: **Utilities** (optional)
 **4+** (no objectionable content, no data collected)
 
 ## Promotional text  [170 max]
-Snap the receipt and Split The Bill itemizes it, divides tax and tip fairly, and shows exactly who owes what — plus a Trips mode to track group expenses. All on your phone.
+Snap the receipt and Split The Bill itemizes it, divides tax and tip fairly, and shows exactly who owes what — plus Groups to track trips and shared tabs and settle up. All on your phone.
 
 ## Keywords  [100 max, comma-separated]
 bill splitter,receipt scanner,split expenses,tip calculator,group,dinner,trip,settle,shared,tab,IOU
@@ -54,23 +54,37 @@ PRIVATE BY DESIGN
 • No account and no sign-up
 • No ads, no analytics, no tracking
 • Receipts are read on-device — photos are never uploaded
-• Everything you enter stays on your iPhone
+• Everything you enter stays on your iPhone, unless you choose to share a group — which uses your own iCloud, never our servers
 
 Fast, fair, and quietly private. Split The Bill just does the math so dinner doesn't have to end in awkward arithmetic.
 
 ---
 
 ## What's New  [for this version — 4000 max]
-• New Trips mode: track a group's shared expenses and settle up with the fewest payments
-• Smoother manual entry and a tidier number pad
-• Reliability improvements
+• Share a group live through your own iCloud — everyone you invite sees and edits the same ledger
+• Share a whole group as a file — AirDrop or message it, and both phones merge without losing anyone's edits
+• New Friends tab: what everyone owes you across all your groups, and settle up everything in one tap
+• Hand off to Venmo, PayPal, or Cash App with the amount prefilled; set a reminder to settle
+• Export a group as a spreadsheet, or a per-person reimbursement statement as PDF
+• Scan a receipt inside a group and it lands as an itemized expense — everyone owes exactly their dishes plus tax and tip
+• Add any saved bill to a group, matching diners to members
+• Expenses can have several payers, adjustments ("Sam +$5"), categories, notes, and a receipt photo
+• Any currency per expense, with balances kept per currency (or a manual "counts as" conversion)
+• Recurring expenses for rent and subscriptions
+• Trips are now Groups: trips, homes, couples, events — any shared tab
+• Record payments when someone pays you back, and watch balances go down
+• See debts as they happened, or flip on "simplify debts" for the fewest payments
+• Edit, delete, and undo expenses; every change is in the new Activity feed
+• Tell the app who you are and balances say "you owe" — people are remembered across groups and bills
 
 ---
 
 ## App Privacy (the questionnaire)
-Answer: **Data Not Collected.** The app has no backend, collects nothing, and
-uses no third-party SDKs. When asked "Do you or your third-party partners
-collect data from this app?", choose **No**.
+Answer: **Data Not Collected.** The app has no backend of ours, collects nothing,
+and uses no third-party SDKs. When asked "Do you or your third-party partners
+collect data from this app?", choose **No** — live group sharing stores data in
+the *user's own* iCloud (Apple's CloudKit), which is not collection by the
+developer and is not declared here.
 
 ## Notes
 - Replace the support email placeholder in docs/index.html and docs/privacy.html

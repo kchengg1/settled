@@ -4,6 +4,14 @@ name: Screenshots
 # screenshots at 6.9" (1290×2796) and uploads them as an artifact.
 on:
   workflow_dispatch:
+    inputs:
+      commit:
+        description: "Also commit the screenshots to docs/screenshots on this branch"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
   screenshots:
@@ -18,11 +26,35 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen
 
+      # Runner images differ in which simulators they ship, so pick one
+      # that exists: the newest Pro Max if there is one, else any iPhone,
+      # installing the iOS platform first if there are none at all.
+      - name: Pick a simulator
+        id: sim
+        run: |
+          pick() {
+            xcrun simctl list devices available \
+              | grep -E '^[[:space:]]+iPhone' \
+              | { grep -i "$1" || true; } \
+              | tail -1 \
+              | sed -E 's/^[[:space:]]+(.*) \([0-9A-Fa-f-]+\) \(.*$/\1/'
+          }
+          NAME="$(pick 'Pro Max')"
+          [ -n "$NAME" ] || NAME="$(pick 'iPhone')"
+          if [ -z "$NAME" ]; then
+            echo "No iPhone simulators installed; downloading the iOS platform"
+            xcodebuild -downloadPlatform iOS
+            NAME="$(pick 'Pro Max')"
+            [ -n "$NAME" ] || NAME="$(pick 'iPhone')"
+          fi
+          echo "Using simulator: $NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
       - name: Run screenshot UI test
         run: |
           xcodebuild test \
             -project SplitChecks.xcodeproj -scheme SplitChecks \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max' \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.name }}" \
             -only-testing:SplitChecksUITests \
             -resultBundlePath result.xcresult \
             CODE_SIGNING_ALLOWED=NO
@@ -59,3 +91,23 @@ jobs:
           name: app-store-screenshots
           path: final/*.png
           if-no-files-found: error
+
+      # Opt-in: keep the captures in the repo (landing page, README, and
+      # review from places that can't reach the artifact store).
+      - name: Commit screenshots to the branch
+        if: ${{ inputs.commit }}
+        run: |
+          mkdir -p docs/screenshots
+          rm -f docs/screenshots/*.png
+          cp final/*.png docs/screenshots/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          if git diff --cached --quiet; then
+            echo "Screenshots unchanged"
+          else
+            # No [skip ci]: a skip marker in the head commit also skips
+            # pull-request runs, which would leave a PR with no checks.
+            git commit -m "Update app screenshots"
+            git push
+          fi

@@ -16,6 +16,7 @@ final class SettlementEngineTests: XCTestCase {
     func testTripScenarioBalancesAndSettlement() {
         let trip = Trip(
             name: "Weekend",
+            simplifyDebts: true,
             people: [alice, bob, cara],
             expenses: [
                 Expense(title: "Dinner", payerID: alice.id, amountCents: 12000,
@@ -49,6 +50,7 @@ final class SettlementEngineTests: XCTestCase {
         // Property: applying the transfers zeroes everyone out.
         let trip = Trip(
             name: "Road trip",
+            simplifyDebts: true,
             people: [alice, bob, cara],
             expenses: [
                 Expense(title: "Gas", payerID: alice.id, amountCents: 8137,
@@ -98,6 +100,7 @@ final class SettlementEngineTests: XCTestCase {
     func testTwoPayerMinimalSettlement() {
         let trip = Trip(
             name: "Pair",
+            simplifyDebts: true,
             people: [alice, bob],
             expenses: [
                 Expense(title: "Lunch", payerID: alice.id, amountCents: 10000,
@@ -138,13 +141,13 @@ final class SettlementEngineTests: XCTestCase {
             people: [alice, bob],
             expenses: [
                 Expense(title: "A", payerID: alice.id, amountCents: 1000, date: day,
-                        split: .equally(participantIDs: [alice.id, bob.id])),
+                        split: .equally(participantIDs: [alice.id, bob.id]), createdAt: day),
                 Expense(title: "B", payerID: bob.id, amountCents: 2000, date: day,
-                        split: .shares([alice.id: 1, bob.id: 2])),
+                        split: .shares([alice.id: 1, bob.id: 2]), createdAt: day),
                 Expense(title: "C", payerID: alice.id, amountCents: 3000, date: day,
-                        split: .percentages([alice.id: 5000, bob.id: 5000])),
+                        split: .percentages([alice.id: 5000, bob.id: 5000]), createdAt: day),
                 Expense(title: "D", payerID: bob.id, amountCents: 4000, date: day,
-                        split: .exactCents([alice.id: 1500, bob.id: 2500])),
+                        split: .exactCents([alice.id: 1500, bob.id: 2500]), createdAt: day),
             ],
             createdAt: day
         )

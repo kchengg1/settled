@@ -15,22 +15,59 @@ final class ScreenshotTests: XCTestCase {
         app.launch()
 
         // 1) Receipt tab (the default) showing a scanned, itemized bill.
-        XCTAssertTrue(app.tabBars.buttons["Trips"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.tabBars.buttons["Groups"].waitForExistence(timeout: 20))
         capture("01-receipt")
 
-        // 2) Trips list.
-        app.tabBars.buttons["Trips"].tap()
+        // 2) Groups list with the overall "you owe / you are owed" header.
+        app.tabBars.buttons["Groups"].tap()
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
-        capture("02-trips")
+        capture("02-groups")
 
-        // 3) A trip's expenses.
-        app.cells.firstMatch.tap()
+        // 3) A group's expenses and payments. The first cell is the overall
+        // balance header, so open the trip by name. SwiftUI may expose the
+        // row as one combined element, so match on the label, any type.
+        let lisbon = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Lisbon Trip"))
+            .firstMatch
+        XCTAssertTrue(lisbon.waitForExistence(timeout: 10))
+        lisbon.tap()
         XCTAssertTrue(app.buttons["Balances"].waitForExistence(timeout: 10))
         capture("03-expenses")
 
-        // 4) Balances and the minimized settle-up.
+        // 4) Balances and settle-up.
         app.buttons["Balances"].tap()
         capture("04-settle-up")
+
+        // 5) One expense in detail: a two-payer dinner with an adjustment.
+        app.buttons["Expenses"].tap()
+        let dinner = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Seafood dinner"))
+            .firstMatch
+        XCTAssertTrue(dinner.waitForExistence(timeout: 10))
+        dinner.tap()
+        XCTAssertTrue(app.navigationBars["Seafood dinner"].waitForExistence(timeout: 10))
+        capture("06-expense-detail")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        // 6) An itemized expense from a scanned receipt.
+        let tasca = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Tasca do Chico"))
+            .firstMatch
+        XCTAssertTrue(tasca.waitForExistence(timeout: 10))
+        tasca.tap()
+        XCTAssertTrue(app.navigationBars["Tasca do Chico"].waitForExistence(timeout: 10))
+        capture("07-itemized-expense")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        // 7) Friends: what everyone owes you across groups.
+        app.tabBars.buttons["Friends"].tap()
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
+        capture("08-friends")
+
+        // 5) The cross-group activity feed.
+        app.tabBars.buttons["Activity"].tap()
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
+        capture("05-activity")
     }
 
     private func capture(_ name: String) {

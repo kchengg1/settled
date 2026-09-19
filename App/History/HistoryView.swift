@@ -5,7 +5,12 @@ import SplitChecksCore
 /// Past bills, newest first. Tap for the full read-only split.
 struct HistoryView: View {
     @Query(sort: \SavedBill.date, order: .reverse) private var bills: [SavedBill]
+    @Query private var groups: [SavedTrip]
     @Environment(\.modelContext) private var context
+
+    private func groupName(_ id: UUID?) -> String? {
+        id.flatMap { id in groups.first { $0.id == id }?.name }
+    }
 
     var body: some View {
         Group {
@@ -43,6 +48,11 @@ struct HistoryView: View {
                 Text("\(bill.date.formatted(date: .abbreviated, time: .shortened)) · \(bill.peopleNames.count) people")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                if let name = groupName(bill.groupID) {
+                    Label("In \(name)", systemImage: "person.3")
+                        .font(.caption)
+                        .foregroundStyle(Theme.accent)
+                }
             }
             Spacer()
             Text(Money.format(bill.totalCents))

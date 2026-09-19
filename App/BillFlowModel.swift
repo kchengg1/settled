@@ -6,11 +6,29 @@ import SplitChecksCore
 /// Drives the one-bill flow: items → people → assign → tip & tax → summary.
 /// All math is delegated to `SplitEngine`; this type only holds editable state.
 @Observable
-final class BillFlowModel {
+final class BillFlowModel: Identifiable {
+
+    let id = UUID()
 
     /// Navigation path; type-erased so the flow steps and saved-bill detail
     /// pushes can share one stack. Clearing it pops to item entry.
     var path = NavigationPath()
+
+    /// When the flow was started from inside a group, where the finished
+    /// bill goes: it becomes an itemized expense there instead of a history
+    /// entry. `existingExpense` is set when re-editing a receipt.
+    struct GroupTarget {
+        let groupID: UUID
+        let groupName: String
+        let currencyCode: String
+        let existingExpense: Expense?
+    }
+
+    var target: GroupTarget?
+    /// Who paid the restaurant, for the group expense.
+    var payerID: Person.ID?
+    /// Called with the finished itemized expense in group mode.
+    var onItemized: ((Expense) -> Void)?
 
     var items: [LineItem] = []
     var people: [Person] = []
@@ -82,6 +100,13 @@ final class BillFlowModel {
         people.append(Person(name: trimmed, colorIndex: people.count))
     }
 
+    /// Adds a directory person (stable ID across bills and groups).
+    /// Ignored if they're already on the bill.
+    func addPerson(_ person: Person) {
+        guard !people.contains(where: { $0.id == person.id }) else { return }
+        people.append(person)
+    }
+
     func removePerson(_ person: Person) {
         people.removeAll { $0.id == person.id }
         assignments.removeAll { $0.personID == person.id }
@@ -121,6 +146,38 @@ final class BillFlowModel {
         }
     }
 
+    /// Loads a saved bill back into the flow (re-editing an itemized
+    /// expense's receipt).
+    func load(snapshot: BillSnapshot, merchantName: String?) {
+        items = snapshot.items
+        people = snapshot.people
+        assignments = snapshot.assignments
+        self.merchantName = merchantName
+        scannedSubtotalCents = nil
+        scannedTotalCents = nil
+        taxCents = snapshot.taxCents
+        tipPercent = nil
+        customTipCents = snapshot.tipCents
+        taxRule = snapshot.taxRule
+        tipRule = snapshot.tipRule
+    }
+
+    /// The group expense for the current bill, in group mode.
+    func itemizedExpense() -> Expense? {
+        guard let target else { return nil }
+        let payer = payerID ?? people.first?.id
+        guard let payer else { return nil }
+        let title = (merchantName ?? "").isEmpty ? "Receipt" : merchantName!
+        if var existing = target.existingExpense {
+            existing.title = title
+            existing.payers = [payer: 0]
+            existing.applyItemizedBill(snapshot)
+            existing.updatedAt = .now
+            return existing
+        }
+        return Expense.itemized(from: snapshot, title: title, payers: [payer: 0], currencyCode: target.currencyCode)
+    }
+
     /// The printed subtotal vs. the sum of parsed items — the built-in
     /// checksum for OCR quality. nil when there's nothing to check against.
     var subtotalChecksumMatches: Bool? {
@@ -140,6 +197,9 @@ final class BillFlowModel {
         customTipCents = 0
         taxRule = .proportional
         tipRule = .proportional
+        target = nil
+        payerID = nil
+        onItemized = nil
     }
 
     // MARK: - Snapshot & sharing
