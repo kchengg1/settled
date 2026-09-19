@@ -1,6 +1,6 @@
 import SwiftUI
 import SwiftData
-import SplitChecksCore
+import SettledCore
 
 /// Who you are, the people directory, and the boring-but-important links.
 struct SettingsView: View {

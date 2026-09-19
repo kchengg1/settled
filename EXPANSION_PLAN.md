@@ -1,6 +1,6 @@
-# Split Checks → full shared-expense tracking: Expansion Plan
+# Settled → full shared-expense tracking: Expansion Plan
 
-This document plans the expansion of Split Checks from "split one receipt, track a trip"
+This document plans the expansion of Settled from "split one receipt, track a trip"
 into a full shared-expense app: friends, groups, rich expenses,
 per-currency balances, recorded reimbursements, an activity feed, reports, and
 device-to-device collaboration — while keeping the two things that make this app
@@ -8,7 +8,7 @@ different: **on-device receipt scanning** and **no accounts, no server**.
 
 It builds on what already exists (see [PLAN.md](PLAN.md), milestones 1–4, plus the
 Trips mode added afterwards). Nothing here requires throwing away the current engine;
-every milestone extends `SplitChecksCore` first and the UI second.
+every milestone extends `SettledCore` first and the UI second.
 
 ---
 
@@ -75,7 +75,7 @@ movement, no ads/analytics.
 
 ---
 
-## 2. Domain model v2 (`SplitChecksCore`)
+## 2. Domain model v2 (`SettledCore`)
 
 Design rules carried forward: value types, `Codable`, `Sendable`, integer cents, engine is
 pure and deterministic, a group is a self-contained document.
@@ -336,7 +336,7 @@ with Sam on Friday", "Rent is due on the 1st". Optional, permission asked at fir
 The honest answer to "how do friends see the same group?" in a no-server app, in three
 increasing steps. Each step is independently shippable; none requires the previous UI to change.
 
-**Step A — Share a file.** Export a group as `<name>.splitchecks` (JSON, registered
+**Step A — Share a file.** Export a group as `<name>.settled` (JSON, registered
 `UTType`, `Codable` document). Send it by AirDrop or Messages; the recipient's app imports
 it. Re-importing a group that already exists **merges** instead of duplicating:
 
@@ -353,7 +353,7 @@ made, then send it back.
 
 **Step B — Live sync through iCloud.** Store each `Group` document as a `CKRecord` in the
 owner's private CloudKit database and share it with `CKShare` (Apple's share sheet handles
-invitations — participants need an iCloud account, not a Split Checks account). Because
+invitations — participants need an iCloud account, not a Settled account). Because
 state is a mergeable document from Step A, conflict resolution is the same `merge`; there
 is no schema to design on the server. Receipt images become `CKAsset`s only for shared
 groups. Costs: iCloud capability + container (already have a paid developer account for
@@ -377,7 +377,7 @@ and shippable to TestFlight. Sizes are rough relative effort.
 | 7 | **Rich expenses** | Multi-payer, `.adjustment`, per-currency balances, manual conversion, categories, `ExpenseValidator`, recurring materialization | Add/Edit expense redesign (payers, adjustment, currency, category, notes, receipt photo, recurrence), expense detail, currency-aware balance rows | L |
 | 8 | **Receipt ↔ group bridge** | `Expense.itemizedBill`, bill-people → member mapping helper, regenerate-split-on-edit | "Scan receipt" from a group, "Add to group" from summary/history, Quick split → Non-group expenses, itemized expense detail | M |
 | 9 | **Friends, settle up, reports** | `friendBalances`, `settleAllTransfers`, CSV writer, statement model | Friends tab + detail, Settle-up sheet with method + deep links, Settle all, reminders, CSV + PDF export, home "you owe / are owed" header | M |
-| 10 | **Collaboration A: file share + merge** | `Group.merge`, tombstone semantics, export/import document; commutativity/idempotence tests | `.splitchecks` `UTType`, `FileDocument`/share sheet export, import via `onOpenURL`, merge review ("3 new expenses, 1 payment") | M |
+| 10 | **Collaboration A: file share + merge** | `Group.merge`, tombstone semantics, export/import document; commutativity/idempotence tests | `.settled` `UTType`, `FileDocument`/share sheet export, import via `onOpenURL`, merge review ("3 new expenses, 1 payment") | M |
 | 11 | **Collaboration B: iCloud shared groups** | — (document already mergeable) | CloudKit container, `CKShare` flow, background fetch + merge, receipt `CKAsset`s, privacy policy + App Privacy answers update | L |
 | 12 | **Polish & platform** | Foundation Models receipt parsing (iOS 26+) as a parser strategy | Home/Lock Screen widget ("You owe $42"), App Intents ("Add $20 lunch to Lisbon"), iPad layout, localization pass, updated screenshots + store copy | M |
 

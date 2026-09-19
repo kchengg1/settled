@@ -5,10 +5,10 @@ Fields below map to App Store Connect. Character limits noted in brackets.
 ---
 
 ## Name  [30 max]
-Split The Bill – Receipts
+Settled: Split Any Bill
 
 ## Subtitle  [30 max]
-Scan receipts, split fairly
+Scan receipts, share expenses
 
 ## Category
 Primary: **Finance**  ·  Secondary: **Utilities** (optional)
@@ -17,7 +17,7 @@ Primary: **Finance**  ·  Secondary: **Utilities** (optional)
 **4+** (no objectionable content, no data collected)
 
 ## Promotional text  [170 max]
-Snap the receipt and Split The Bill itemizes it, divides tax and tip fairly, and shows exactly who owes what — plus Groups to track trips and shared tabs and settle up. All on your phone.
+Snap the receipt and Settled itemizes it, divides tax and tip fairly, and shows exactly who owes what — plus Groups to track trips and shared tabs and settle up. All on your phone.
 
 ## Keywords  [100 max, comma-separated]
 bill splitter,receipt scanner,split expenses,tip calculator,group,dinner,trip,settle,shared,tab,IOU
@@ -35,7 +35,7 @@ https://kchengg1.github.io/split_checks/privacy.html
 
 ## Description  [4000 max]
 
-Split The Bill turns a photo of a restaurant receipt into a fair, itemized split in seconds — and it never leaves your phone.
+Settled turns a photo of a restaurant receipt into a fair, itemized split in seconds — and it never leaves your phone.
 
 Point your camera at the receipt and it reads the line items for you. Tap who ordered what, share the appetizers, and the app splits tax and tip proportionally, down to the penny, so every total adds up exactly to the bill. Then share a clean breakdown straight to your group chat.
 
@@ -56,7 +56,7 @@ PRIVATE BY DESIGN
 • Receipts are read on-device — photos are never uploaded
 • Everything you enter stays on your iPhone, unless you choose to share a group — which uses your own iCloud, never our servers
 
-Fast, fair, and quietly private. Split The Bill just does the math so dinner doesn't have to end in awkward arithmetic.
+Fast, fair, and quietly private. Settled just does the math so dinner doesn't have to end in awkward arithmetic.
 
 ---
 
