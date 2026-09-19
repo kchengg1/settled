@@ -1,7 +1,7 @@
-# Split Checks → Splitwise-class expense sharing: Expansion Plan
+# Split Checks → full shared-expense tracking: Expansion Plan
 
 This document plans the expansion of Split Checks from "split one receipt, track a trip"
-into a full shared-expense app in the Splitwise mold: friends, groups, rich expenses,
+into a full shared-expense app: friends, groups, rich expenses,
 per-currency balances, recorded reimbursements, an activity feed, reports, and
 device-to-device collaboration — while keeping the two things that make this app
 different: **on-device receipt scanning** and **no accounts, no server**.
@@ -14,7 +14,7 @@ every milestone extends `SplitChecksCore` first and the UI second.
 
 ## 0. Where we are today
 
-| Layer | What exists | Gap vs. Splitwise |
+| Layer | What exists | Gap vs. a full expense-sharing app |
 |---|---|---|
 | Money & math | Integer cents, `SplitEngine.apportion` (largest remainder, fuzz-tested) | Fine as-is. Reused everywhere below. |
 | Receipt flow | Scan → items → people → assign → tip/tax → summary → share → history | Result is a dead end: it can't become a trip expense. |
@@ -28,9 +28,9 @@ is who across time, who has paid whom back, and who else can see it".**
 
 ---
 
-## 1. Product scope: what "Splitwise-type" means here
+## 1. Product scope: what "full expense sharing" means here
 
-Feature inventory, grouped by how Splitwise users think about it. ✅ exists, 🔶 partial, ⬜ new.
+Feature inventory, grouped by how people think about shared expenses. ✅ exists, 🔶 partial, ⬜ new.
 
 **People**
 - ⬜ *Me* — a designated person so the UI can say "you owe Sam $12" instead of "Alex owes Sam".
@@ -40,7 +40,7 @@ Feature inventory, grouped by how Splitwise users think about it. ✅ exists, �
 **Groups** (the generalization of today's Trip)
 - 🔶 Groups with a kind: trip, home, couple, event, other. Kind only changes iconography and defaults.
 - ✅ Members, expenses, per-group balances, minimized settle-up.
-- ⬜ "Simplify debts" as a per-group toggle (Splitwise's default is *off*: show pairwise debts as incurred).
+- ⬜ "Simplify debts" as a per-group toggle (default *off*: show pairwise debts as incurred).
 - ⬜ Archive / leave-group semantics; "Non-group expenses" pseudo-group for one-off splits.
 
 **Expenses**
@@ -115,7 +115,7 @@ public struct Group: Identifiable, Hashable, Codable, Sendable {
     public var name: String
     public var kind: GroupKind
     public var defaultCurrencyCode: String
-    public var simplifyDebts: Bool          // Splitwise default: false
+    public var simplifyDebts: Bool          // default: false
     public var people: [Person]
     public var entries: [LedgerEntry]       // replaces `expenses`
     public var activity: [ActivityEvent]    // append-only audit trail
@@ -188,7 +188,7 @@ public struct Payment: Identifiable, Hashable, Codable, Sendable {
 ```
 
 For balance purposes a payment is exactly "an expense paid by `from`, owed entirely by
-`to`", which is how Splitwise models it too. Keeping it a distinct type gives the UI
+`to`", which is how shared-expense ledgers usually model it. Keeping it a distinct type gives the UI
 clean copy ("Sam paid you $40 via Venmo") and lets reports separate spend from transfers.
 
 ### 2.5 Activity / audit
@@ -234,7 +234,7 @@ All pure, all in the core package, all tested against invariants.
 | `materializeRecurring(group, now)` | Emits due instances of recurring expenses; idempotent | No duplicates on repeated runs |
 
 **Multi-currency policy:** balances are *per currency* and never auto-converted (no
-network, no rate source, no surprises — this matches Splitwise). An optional manual
+network, no rate source, no surprises). An optional manual
 `conversion: (toCode, rateBasisPoints)` on an expense lets a user say "this €50 counts as
 $54 for the group" at entry time; the engine then treats the expense in the converted
 currency. That is the only conversion path.
@@ -248,7 +248,7 @@ users expect to see in the expense detail.
 
 ## 4. App architecture and UI
 
-### 4.1 Information architecture (Splitwise-shaped, scanner-first)
+### 4.1 Information architecture (groups-first, scanner-first)
 
 ```
 TabView
@@ -265,7 +265,7 @@ TabView
 
 The existing receipt flow is not removed; it becomes the **Scan receipt** entry point of
 "Add expense" and keeps working standalone as **Quick split**, whose result lands in the
-implicit *Non-group expenses* group (exactly Splitwise's behavior), so history survives as
+implicit *Non-group expenses* group (the usual convention), so history survives as
 a group like any other.
 
 ### 4.2 The receipt ↔ group bridge (the differentiator)
@@ -324,7 +324,7 @@ with Sam on Friday", "Rent is due on the 1st". Optional, permission asked at fir
 
 **Reports:**
 - Group CSV (date, title, category, currency, amount, paid by, each member's share) —
-  Splitwise parity, and what people paste into a spreadsheet.
+  what people paste into a spreadsheet.
 - Per-person **reimbursement statement** PDF (`ImageRenderer` → PDF): expenses they're owed
   for, with receipt thumbnails when attached, subtotal per currency, and a payment history.
   This is the "expense a work trip" use case.
@@ -421,8 +421,8 @@ marketing story; 9 makes reimbursement real; 10 → 11 is the collaboration ladd
 All six were confirmed as recommended (the bold option in each).
 
 1. **Rename Trips → Groups** in the UI? **Yes**: "Groups" with a kind is what users expect
-   and what Splitwise imports look like. Keep the airplane icon for `kind: .trip`.
-2. **Simplify debts default**: **off per group** (Splitwise parity: people want to see "I
+   and what data imported from other expense apps looks like. Keep the airplane icon for `kind: .trip`.
+2. **Simplify debts default**: **off per group** (people want to see "I
    owe Sam because of dinner", not a rearranged transfer), with a one-tap toggle. Today's
    Trips mode always simplifies, so existing groups migrate with `simplifyDebts: true` to
    avoid surprising current users.
