@@ -106,6 +106,8 @@ jobs:
           if git diff --cached --quiet; then
             echo "Screenshots unchanged"
           else
-            git commit -m "Update app screenshots [skip ci]"
+            # No [skip ci]: a skip marker in the head commit also skips
+            # pull-request runs, which would leave a PR with no checks.
+            git commit -m "Update app screenshots"
             git push
           fi
