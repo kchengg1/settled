@@ -96,7 +96,7 @@ struct SettingsView: View {
             }
 
             Section("About") {
-                Link("Privacy policy", destination: URL(string: "https://kchengg1.github.io/split_checks/privacy.html")!)
+                Link("Privacy policy", destination: URL(string: "https://kchengg1.github.io/settled/privacy.html")!)
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
                 Text("No account, no server. Everything stays on this phone.")
                     .font(.footnote)

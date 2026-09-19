@@ -23,13 +23,13 @@ Snap the receipt and Settled itemizes it, divides tax and tip fairly, and shows 
 bill splitter,receipt scanner,split expenses,tip calculator,group,dinner,trip,settle,shared,tab,IOU
 
 ## Support URL
-https://kchengg1.github.io/split_checks/
+https://kchengg1.github.io/settled/
 
 ## Marketing URL  (optional)
-https://kchengg1.github.io/split_checks/
+https://kchengg1.github.io/settled/
 
 ## Privacy Policy URL
-https://kchengg1.github.io/split_checks/privacy.html
+https://kchengg1.github.io/settled/privacy.html
 
 ---
 
@@ -87,6 +87,10 @@ the *user's own* iCloud (Apple's CloudKit), which is not collection by the
 developer and is not declared here.
 
 ## Notes
+- These URLs assume the GitHub repository has been renamed to `settled`
+  (Settings → General → Repository name). GitHub Pages serves a project site
+  from the repository name, and it does not reliably redirect the old path,
+  so submit these only once the rename is done.
 - Replace the support email placeholder in docs/index.html and docs/privacy.html
   before submitting (see chat).
 - Competitor trademarks (e.g. other split-bill app names) are intentionally kept
