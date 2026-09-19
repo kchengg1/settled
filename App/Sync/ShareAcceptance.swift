@@ -2,22 +2,16 @@ import SwiftUI
 import CloudKit
 
 /// Accepting an invitation someone sent. A tapped iCloud share link reaches
-/// the app through the scene delegate, which is why the SwiftUI app installs
-/// one; it hands the metadata to whoever is listening.
+/// the app through the application delegate, which posts it for whoever is
+/// listening.
+///
+/// Deliberately *not* a scene delegate: a SwiftUI app installs its own, and
+/// replacing it via `UISceneConfiguration.delegateClass` leaves the app with
+/// no window at all.
 final class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication,
-                     configurationForConnecting connectingSceneSession: UISceneSession,
-                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
-        configuration.delegateClass = ShareSceneDelegate.self
-        return configuration
-    }
-}
-
-final class ShareSceneDelegate: NSObject, UIWindowSceneDelegate {
     static let didReceiveShare = Notification.Name("SplitChecks.didReceiveCloudShare")
 
-    func windowScene(_ windowScene: UIWindowScene,
+    func application(_ application: UIApplication,
                      userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata) {
         NotificationCenter.default.post(name: Self.didReceiveShare, object: cloudKitShareMetadata)
     }

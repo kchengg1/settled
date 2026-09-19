@@ -247,9 +247,7 @@ struct GroupDetailView: View {
                 let (share, zone) = try await cloud.share(group, zone: saved.cloudZone)
                 saved.cloudZone = zone
                 saved.lastSyncedAt = .now
-                pendingShare = PendingShare(share: share,
-                                            container: CKContainer(identifier: CloudSyncEngine.containerIdentifier),
-                                            title: group.name)
+                pendingShare = PendingShare(share: share, container: cloud.sharingContainer, title: group.name)
             } catch {
                 shareError = error.localizedDescription
             }

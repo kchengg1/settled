@@ -37,17 +37,23 @@ final class CloudSyncEngine {
     static let zoneName = "SplitChecksGroups"
 
     private(set) var status: Status = .unknown
-    private let container: CKContainer
 
-    init(container: CKContainer = CKContainer(identifier: CloudSyncEngine.containerIdentifier)) {
-        self.container = container
-    }
+    /// Built on first use rather than at launch: constructing a CKContainer
+    /// needs the iCloud entitlement, which an unsigned build (the simulator
+    /// on CI) doesn't carry.
+    private lazy var container = CKContainer(identifier: Self.containerIdentifier)
 
     // MARK: - Availability
 
     /// Checks the iCloud account. Safe to call often; cheap after the first.
     @discardableResult
     func refreshAvailability() async -> Bool {
+        // Screenshot runs use a throwaway store and no account; iCloud has
+        // nothing to offer them and would only make them flaky.
+        guard !DemoData.isScreenshotRun else {
+            status = .unavailable("iCloud is off in demo mode.")
+            return false
+        }
         do {
             switch try await container.accountStatus() {
             case .available:
@@ -69,6 +75,9 @@ final class CloudSyncEngine {
     }
 
     // MARK: - Sharing
+
+    /// The CloudKit container, for handing to Apple's sharing screen.
+    var sharingContainer: CKContainer { container }
 
     /// Puts a group in iCloud and returns the share to hand to the system's
     /// sharing screen. Safe to call again for an already shared group: the

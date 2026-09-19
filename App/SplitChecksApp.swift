@@ -5,8 +5,8 @@ import SplitChecksCore
 
 @main
 struct SplitChecksApp: App {
-    // A scene delegate is the only way an accepted iCloud share reaches a
-    // SwiftUI app, so the app installs one.
+    // An app delegate, purely so an accepted iCloud share invitation
+    // reaches the app.
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var model = BillFlowModel()
     @State private var cloud = CloudSyncEngine()
@@ -92,7 +92,7 @@ struct RootView: View {
             Task { await GroupSyncCoordinator.syncAll(engine: cloud, context: context) }
         }
         // Someone tapped an invitation to a shared group.
-        .onReceive(NotificationCenter.default.publisher(for: ShareSceneDelegate.didReceiveShare)) { notification in
+        .onReceive(NotificationCenter.default.publisher(for: AppDelegate.didReceiveShare)) { notification in
             guard let metadata = notification.object as? CKShare.Metadata else { return }
             Task {
                 try? await cloud.accept(metadata)
