@@ -19,6 +19,11 @@ final class SavedTrip {
     var totalCents: Int
     var peopleCount: Int
     var payload: Data
+    /// Set once the group is shared through iCloud: which CloudKit zone it
+    /// lives in, and who owns that zone. Nil means local-only.
+    var cloudZoneName: String?
+    var cloudOwnerName: String?
+    var lastSyncedAt: Date?
 
     init(group: ExpenseGroup) {
         self.id = group.id
@@ -33,6 +38,20 @@ final class SavedTrip {
     var kind: GroupKind {
         GroupKind(rawValue: kindRaw) ?? .trip
     }
+
+    /// The iCloud zone this group syncs through, if it's shared.
+    var cloudZone: CloudZone? {
+        get {
+            guard let cloudZoneName, let cloudOwnerName else { return nil }
+            return CloudZone(zoneName: cloudZoneName, ownerName: cloudOwnerName)
+        }
+        set {
+            cloudZoneName = newValue?.zoneName
+            cloudOwnerName = newValue?.ownerName
+        }
+    }
+
+    var isShared: Bool { cloudZoneName != nil }
 
     /// The decoded group, or a fresh one if the payload is somehow unreadable.
     var group: ExpenseGroup {

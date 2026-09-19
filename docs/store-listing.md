@@ -54,13 +54,14 @@ PRIVATE BY DESIGN
 • No account and no sign-up
 • No ads, no analytics, no tracking
 • Receipts are read on-device — photos are never uploaded
-• Everything you enter stays on your iPhone
+• Everything you enter stays on your iPhone, unless you choose to share a group — which uses your own iCloud, never our servers
 
 Fast, fair, and quietly private. Split The Bill just does the math so dinner doesn't have to end in awkward arithmetic.
 
 ---
 
 ## What's New  [for this version — 4000 max]
+• Share a group live through your own iCloud — everyone you invite sees and edits the same ledger
 • Share a whole group as a file — AirDrop or message it, and both phones merge without losing anyone's edits
 • New Friends tab: what everyone owes you across all your groups, and settle up everything in one tap
 • Hand off to Venmo, PayPal, or Cash App with the amount prefilled; set a reminder to settle
@@ -79,9 +80,11 @@ Fast, fair, and quietly private. Split The Bill just does the math so dinner doe
 ---
 
 ## App Privacy (the questionnaire)
-Answer: **Data Not Collected.** The app has no backend, collects nothing, and
-uses no third-party SDKs. When asked "Do you or your third-party partners
-collect data from this app?", choose **No**.
+Answer: **Data Not Collected.** The app has no backend of ours, collects nothing,
+and uses no third-party SDKs. When asked "Do you or your third-party partners
+collect data from this app?", choose **No** — live group sharing stores data in
+the *user's own* iCloud (Apple's CloudKit), which is not collection by the
+developer and is not declared here.
 
 ## Notes
 - Replace the support email placeholder in docs/index.html and docs/privacy.html

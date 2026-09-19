@@ -44,6 +44,15 @@ targets:
             CFBundleTypeRole: Editor
             LSHandlerRank: Owner
             LSItemContentTypes: [com.kchengg1.splitchecks.group]
+        # Required to accept an invitation to a group shared through iCloud.
+        CKSharingSupported: true
+    # Live group sharing runs on the user's own iCloud. The container must
+    # exist in the Apple developer account before a signed build (see README).
+    entitlements:
+      path: SplitChecks.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.kchengg1.splitchecks]
+        com.apple.developer.icloud-services: [CloudKit]
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

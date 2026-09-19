@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import CloudKit
 import SplitChecksCore
 
 /// One group: its ledger of expenses and payments, balances with settle-up,
@@ -14,6 +15,9 @@ struct GroupDetailView: View {
     @State private var editingExpense: Expense?
     @State private var receiptFlow: BillFlowModel?
     @State private var exportFile: ExportFile?
+    @State private var pendingShare: PendingShare?
+    @State private var shareError: String?
+    @Environment(CloudSyncEngine.self) private var cloud
     @State private var paymentDraft: PaymentDraft?
     @State private var showingMemberPicker = false
     @State private var showingRename = false
@@ -86,6 +90,18 @@ struct GroupDetailView: View {
         .sheet(item: $exportFile) { file in
             ActivitySheet(items: [file.url])
         }
+        .sheet(item: $pendingShare) { pending in
+            ShareGroupSheet(share: pending.share, container: pending.container, title: pending.title) {
+                saved.cloudZone = nil
+            }
+            .ignoresSafeArea()
+        }
+        .alert("Couldn't share this group", isPresented: Binding(get: { shareError != nil },
+                                                                set: { if !$0 { shareError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(shareError ?? "")
+        }
         .sheet(isPresented: $showingMemberPicker) {
             MemberPickerView(existingIDs: Set(group.people.map(\.id))) { people in
                 for person in people {
@@ -100,7 +116,12 @@ struct GroupDetailView: View {
         }
         // Any mutation of `group` is written straight back to storage, and
         // a change made elsewhere (restore from the Activity tab) is picked up.
-        .onChange(of: group) { saved.update(from: group) }
+        .onChange(of: group) {
+            saved.update(from: group)
+            if saved.isShared {
+                Task { await GroupSyncCoordinator.push(saved, engine: cloud) }
+            }
+        }
         .onChange(of: saved.updatedAt) {
             let latest = saved.group
             if latest != group { group = latest }
@@ -132,6 +153,12 @@ struct GroupDetailView: View {
                     .monospacedDigit()
             }
             Spacer(minLength: 8)
+            if saved.isShared {
+                Image(systemName: "icloud.fill")
+                    .font(.caption)
+                    .foregroundStyle(Theme.accent)
+                    .accessibilityLabel("Shared through iCloud")
+            }
             if let myBalance {
                 StatusPill(text: namer.balanceLabel(myBalance), color: Theme.balanceColor(myBalance.cents))
             } else {
@@ -189,6 +216,12 @@ struct GroupDetailView: View {
                 Toggle("Simplify debts", isOn: simplifyBinding)
                 Divider()
                 Button {
+                    shareViaCloud()
+                } label: {
+                    Label(saved.isShared ? "Manage iCloud sharing" : "Share live with iCloud",
+                          systemImage: "person.crop.circle.badge.plus")
+                }
+                Button {
                     shareGroupFile()
                 } label: {
                     Label("Share a copy of this group", systemImage: "square.and.arrow.up.on.square")
@@ -201,6 +234,24 @@ struct GroupDetailView: View {
                 .disabled(group.liveEntries.isEmpty)
             } label: {
                 Label("More", systemImage: "ellipsis.circle")
+            }
+        }
+    }
+
+    /// Puts the group in iCloud and opens Apple's sharing screen. Everyone
+    /// invited edits the same ledger; edits merge exactly as a shared file
+    /// does, so the two ways of sharing agree.
+    private func shareViaCloud() {
+        Task {
+            do {
+                let (share, zone) = try await cloud.share(group, zone: saved.cloudZone)
+                saved.cloudZone = zone
+                saved.lastSyncedAt = .now
+                pendingShare = PendingShare(share: share,
+                                            container: CKContainer(identifier: CloudSyncEngine.containerIdentifier),
+                                            title: group.name)
+            } catch {
+                shareError = error.localizedDescription
             }
         }
     }

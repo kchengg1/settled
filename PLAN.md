@@ -118,7 +118,8 @@ Assignment  — lineItem →, person →, shareWeight (1 = full/even share)
 | 8 | **Receipt ↔ group bridge** | Scan a receipt from inside a group and land it as an itemized expense; add a finished or saved bill to a group with diner → member matching; itemized expenses show per-person items and can reopen the receipt to regenerate the split | ✅ Done |
 | 9 | **Friends, settle up, reports** | Friends tab with cross-group balances per currency, settle-everything in one tap, Venmo / PayPal / Cash App hand-offs, local reminders, CSV export, per-person PDF statements | ✅ Done |
 | 10 | **Share a group as a file** | Export a group as `.splitchecks`, open or import one, and merge two devices' copies without losing edits (later edit wins, deletions stick) | ✅ Done |
-| 11+ | **Collaboration** | iCloud shared groups on top of the same merge — see [EXPANSION_PLAN.md](EXPANSION_PLAN.md) | Planned |
+| 11 | **iCloud shared groups** | Share a group live through the user's own iCloud (CloudKit `CKShare`); participants edit the same ledger and changes reconcile with the Milestone 10 merge | ✅ Done |
+| 12 | *(Optional later)* | Foundation-Models receipt parsing, widgets, App Intents, iPad layout, localization | — |
 
 Milestone 1 first is deliberate: the math engine is the riskiest correctness surface and needs zero UI to verify, and manual entry means the app degrades gracefully whenever OCR disappoints.
 

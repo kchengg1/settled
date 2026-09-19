@@ -1,10 +1,15 @@
 import SwiftUI
 import SwiftData
+import CloudKit
 import SplitChecksCore
 
 @main
 struct SplitChecksApp: App {
+    // A scene delegate is the only way an accepted iCloud share reaches a
+    // SwiftUI app, so the app installs one.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var model = BillFlowModel()
+    @State private var cloud = CloudSyncEngine()
     private let container: ModelContainer
 
     init() {
@@ -24,6 +29,7 @@ struct SplitChecksApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(model: model)
+                .environment(cloud)
         }
         .modelContainer(container)
     }
@@ -36,6 +42,7 @@ struct RootView: View {
     @Bindable var model: BillFlowModel
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(CloudSyncEngine.self) private var cloud
     @AppStorage(Me.onboardedKey) private var onboarded = false
     @AppStorage(Me.defaultsKey) private var meIDString = ""
     @State private var showingOnboarding = false
@@ -75,11 +82,22 @@ struct RootView: View {
             PeopleDirectory.backfillIfNeeded(in: context)
             materializeRecurring()
             if !onboarded { showingOnboarding = true }
+            await GroupSyncCoordinator.syncAll(engine: cloud, context: context)
         }
-        // No server generates recurring expenses; the app does, whenever
-        // it comes to the foreground.
+        // No server generates recurring expenses or pushes changes; the app
+        // does both whenever it comes to the foreground.
         .onChange(of: scenePhase) {
-            if scenePhase == .active { materializeRecurring() }
+            guard scenePhase == .active else { return }
+            materializeRecurring()
+            Task { await GroupSyncCoordinator.syncAll(engine: cloud, context: context) }
+        }
+        // Someone tapped an invitation to a shared group.
+        .onReceive(NotificationCenter.default.publisher(for: ShareSceneDelegate.didReceiveShare)) { notification in
+            guard let metadata = notification.object as? CKShare.Metadata else { return }
+            Task {
+                try? await cloud.accept(metadata)
+                await GroupSyncCoordinator.syncAll(engine: cloud, context: context)
+            }
         }
         // Dismissing by any route counts as "asked once"; Settings can
         // always set it later.

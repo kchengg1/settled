@@ -7,7 +7,18 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \SavedPerson.name) private var people: [SavedPerson]
     @AppStorage(Me.defaultsKey) private var meIDString = ""
+    @Environment(CloudSyncEngine.self) private var cloud
     @State private var showingMe = false
+
+    private var cloudStatus: String {
+        switch cloud.status {
+        case .unknown: return "Checking…"
+        case .unavailable(let why): return why
+        case .idle: return "Ready"
+        case .syncing: return "Syncing…"
+        case .failed(let why): return why
+        }
+    }
 
     private var me: SavedPerson? {
         people.first { $0.id.uuidString == meIDString }
@@ -73,6 +84,17 @@ struct SettingsView: View {
                 Text("Removing someone here doesn't change the groups they're already in.")
             }
 
+            Section {
+                LabeledContent("iCloud") {
+                    Text(cloudStatus)
+                        .foregroundStyle(cloud.status.isAvailable ? Theme.positive : .secondary)
+                }
+            } header: {
+                Text("Sharing")
+            } footer: {
+                Text("Groups stay on this phone until you share one. Sharing a group live stores it in your own iCloud so the people you invite see the same ledger.")
+            }
+
             Section("About") {
                 Link("Privacy policy", destination: URL(string: "https://kchengg1.github.io/split_checks/privacy.html")!)
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
@@ -82,6 +104,7 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .task { await cloud.refreshAvailability() }
         .sheet(isPresented: $showingMe) {
             MeOnboardingView()
         }
