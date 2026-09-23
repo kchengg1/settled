@@ -44,6 +44,8 @@ targets:
             CFBundleTypeRole: Editor
             LSHandlerRank: Owner
             LSItemContentTypes: [com.kchengg1.settled.group]
+        # Imported group files are copied into the app, never edited in place.
+        LSSupportsOpeningDocumentsInPlace: false
         # Required to accept an invitation to a group shared through iCloud.
         CKSharingSupported: true
     # Live group sharing runs on the user's own iCloud. The container must
