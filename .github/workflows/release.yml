@@ -1,7 +1,7 @@
 name: Release to TestFlight
 
 # Manual trigger (Actions tab → Release to TestFlight → Run workflow),
-# or push a tag like v0.1.0.
+# or push a tag like v1.0.
 on:
   workflow_dispatch:
   push:
@@ -52,6 +52,19 @@ jobs:
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
+
+      # App Store Connect rejects a reused build number only after the whole
+      # upload, so catch an Info.plist that ignores the override here.
+      - name: Check the archive's build number
+        run: |
+          plist=build/Settled.xcarchive/Products/Applications/Settled.app/Info.plist
+          version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")
+          build=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")
+          echo "Archived Settled $version ($build)"
+          if [ "$build" != "${{ github.run_number }}" ]; then
+            echo "::error::Archive has build number $build, expected ${{ github.run_number }}"
+            exit 1
+          fi
 
       - name: Write export options
         env:
