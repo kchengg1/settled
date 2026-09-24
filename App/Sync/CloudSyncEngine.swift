@@ -11,6 +11,12 @@ import SettledCore
 ///
 /// Everything here is additive. A group is local-only until someone taps
 /// Share, and every failure is reported rather than thrown at the user.
+///
+/// Main-actor bound: the screens observe `status`, and launch starts two
+/// syncs at once (first appearance and becoming active). Off the main
+/// actor those raced on `status` and the lazily built container. CloudKit's
+/// async calls suspend rather than block, so this costs nothing.
+@MainActor
 @Observable
 final class CloudSyncEngine {
 
@@ -29,12 +35,12 @@ final class CloudSyncEngine {
         }
     }
 
-    static let containerIdentifier = "iCloud.com.kchengg1.settled"
-    static let recordType = "SharedGroup"
-    static let payloadKey = "payload"
-    static let nameKey = "name"
+    nonisolated static let containerIdentifier = "iCloud.com.kchengg1.settled"
+    nonisolated static let recordType = "SharedGroup"
+    nonisolated static let payloadKey = "payload"
+    nonisolated static let nameKey = "name"
     /// Our own zone in the private database. Sharing needs a custom zone.
-    static let zoneName = "SettledGroups"
+    nonisolated static let zoneName = "SettledGroups"
 
     private(set) var status: Status = .unknown
 

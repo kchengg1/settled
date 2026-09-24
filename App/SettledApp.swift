@@ -11,33 +11,66 @@ struct SettledApp: App {
     @State private var model = BillFlowModel()
     @State private var cloud = CloudSyncEngine()
     private let container: ModelContainer
+    /// Why the saved data couldn't be opened, when it couldn't.
+    private let storeFailure: String?
 
     init() {
         let screenshots = DemoData.isScreenshotRun
         // Screenshot runs use a throwaway in-memory store seeded with demo
         // data; real launches use the persistent store as before.
-        //
-        // The store stays on this device: group sharing has its own CloudKit
-        // sync. Left at its default, SwiftData would see the app's iCloud
-        // entitlement and try to mirror the store to CloudKit, which rejects
-        // the store's unique attributes and crashes the app on launch.
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: screenshots,
-                                               cloudKitDatabase: .none)
-        let container = try! ModelContainer(for: SavedBill.self, SavedTrip.self, SavedPerson.self,
-                                            configurations: configuration)
+        let (container, failure) = Self.openStore(inMemory: screenshots)
         if screenshots {
             DemoData.seed(into: container.mainContext)
             _model = State(initialValue: DemoData.receiptModel())
         }
         self.container = container
+        self.storeFailure = failure
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView(model: model)
+            RootView(model: model, storeFailure: storeFailure)
                 .environment(cloud)
         }
         .modelContainer(container)
+    }
+
+    /// Opens the local store without ever taking the app down with it. A
+    /// store that won't open is moved aside (kept, not deleted) and a fresh
+    /// one is used; the reason is returned so the app can show it.
+    ///
+    /// The store stays on this device: group sharing has its own CloudKit
+    /// sync. Left at its default, SwiftData would see the app's iCloud
+    /// entitlement and try to mirror the store to CloudKit, which rejects
+    /// the store's unique attributes.
+    private static func openStore(inMemory: Bool) -> (ModelContainer, String?) {
+        let schema = Schema([SavedBill.self, SavedTrip.self, SavedPerson.self])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory,
+                                               cloudKitDatabase: .none)
+        do {
+            return (try ModelContainer(for: schema, configurations: configuration), nil)
+        } catch {
+            let failure = String(describing: error)
+            setAside(configuration.url)
+            if let fresh = try? ModelContainer(for: schema, configurations: configuration) {
+                return (fresh, failure)
+            }
+            // Nothing on disk will open; run for this session in memory.
+            let memory = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true,
+                                            cloudKitDatabase: .none)
+            return (try! ModelContainer(for: schema, configurations: memory), failure)
+        }
+    }
+
+    /// Renames the store and its journal files so a fresh store can take
+    /// their place without losing what they held.
+    private static func setAside(_ url: URL) {
+        let stamp = Int(Date().timeIntervalSince1970)
+        for suffix in ["", "-shm", "-wal"] {
+            let file = URL(fileURLWithPath: url.path + suffix)
+            let kept = URL(fileURLWithPath: url.path + suffix + ".unreadable-\(stamp)")
+            try? FileManager.default.moveItem(at: file, to: kept)
+        }
     }
 }
 
@@ -46,6 +79,9 @@ struct SettledApp: App {
 /// settings (who you are, the people directory).
 struct RootView: View {
     @Bindable var model: BillFlowModel
+    /// Set when the saved data couldn't be opened and a fresh store was used.
+    var storeFailure: String? = nil
+    @State private var storeFailureDismissed = false
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
     @Environment(CloudSyncEngine.self) private var cloud
@@ -84,6 +120,12 @@ struct RootView: View {
             .tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }
         .tint(Theme.accent)
+        // Shown rather than crashing, with the reason, so it can be reported.
+        .safeAreaInset(edge: .top) {
+            if let storeFailure, !storeFailureDismissed {
+                StoreFailureBanner(reason: storeFailure) { storeFailureDismissed = true }
+            }
+        }
         .task {
             PeopleDirectory.backfillIfNeeded(in: context)
             materializeRecurring()
@@ -149,4 +191,33 @@ enum BillStep: Hashable {
     case tipTax
     case summary
     case history
+}
+
+/// Says that saved data couldn't be opened, and why. The old file is kept
+/// beside the new one, so nothing is lost for good.
+private struct StoreFailureBanner: View {
+    let reason: String
+    let dismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Label("Saved data couldn't be opened", systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Button("Dismiss", action: dismiss)
+                    .font(.subheadline)
+            }
+            Text("Settled started with a fresh copy and kept the old file. Please screenshot this for support:")
+                .font(.caption)
+            Text(reason)
+                .font(.caption2.monospaced())
+                .lineLimit(6)
+                .textSelection(.enabled)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal)
+    }
 }
