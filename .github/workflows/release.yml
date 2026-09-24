@@ -120,3 +120,15 @@ jobs:
               || echo "    (grants no iCloud entitlements)"
           done < <(find ~/Library -name '*.mobileprovision' 2>/dev/null)
           [ "$found" = 1 ] || echo "(no profiles found)"
+
+      # Each runner gets a new "Created via API" development certificate
+      # whose private key vanishes with the machine. Revoke it so they don't
+      # pile up to Apple's limit, which blocks archiving. Runs even after a
+      # failure, since a failed archive can still have made one.
+      - name: Revoke this run's development certificate
+        if: always()
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_PATH: private_keys/AuthKey.p8
+        run: python3 .github/scripts/revoke_run_certificates.py
