@@ -16,7 +16,13 @@ struct SettledApp: App {
         let screenshots = DemoData.isScreenshotRun
         // Screenshot runs use a throwaway in-memory store seeded with demo
         // data; real launches use the persistent store as before.
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: screenshots)
+        //
+        // The store stays on this device: group sharing has its own CloudKit
+        // sync. Left at its default, SwiftData would see the app's iCloud
+        // entitlement and try to mirror the store to CloudKit, which rejects
+        // the store's unique attributes and crashes the app on launch.
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: screenshots,
+                                               cloudKitDatabase: .none)
         let container = try! ModelContainer(for: SavedBill.self, SavedTrip.self, SavedPerson.self,
                                             configurations: configuration)
         if screenshots {
