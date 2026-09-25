@@ -1,0 +1,64 @@
+name: Symbolicate a crash
+
+# On demand: rebuilds a released commit the way the release does, then
+# prints the binary's UUID and the functions at the given offsets. When the
+# UUID matches the crash report's slice_uuid, the build is identical to the
+# one that crashed and the functions are exact.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit or branch the release was built from
+        required: true
+      build_number:
+        description: The release's build number (its run number)
+        required: true
+      offsets:
+        description: Space-separated decimal imageOffset values from the crashed thread's Settled frames
+        required: true
+
+jobs:
+  symbolicate:
+    name: Rebuild and symbolicate
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Xcode versions and simulator runtimes on this runner
+        run: |
+          xcodebuild -version
+          ls -d /Applications/Xcode*.app
+          xcrun simctl list runtimes
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen
+
+      # Same action, configuration, archive path, and build number as the
+      # release, but unsigned: signing doesn't change the Mach-O UUID.
+      - name: Archive (Release, unsigned)
+        run: |
+          xcodebuild -project Settled.xcodeproj -scheme Settled \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath build/Settled.xcarchive \
+            archive -quiet \
+            CODE_SIGNING_ALLOWED=NO \
+            CURRENT_PROJECT_VERSION=${{ inputs.build_number }}
+
+      - name: UUID and functions at the crash offsets
+        run: |
+          dsym=build/Settled.xcarchive/dSYMs/Settled.app.dSYM/Contents/Resources/DWARF/Settled
+          echo "=== UUID (compare with the crash report's slice_uuid) ==="
+          dwarfdump --uuid "$dsym"
+          echo
+          echo "=== Functions ==="
+          for offset in ${{ inputs.offsets }}; do
+            address=$(printf '0x%x' $((0x100000000 + offset)))
+            printf '%-10s ' "$offset"
+            atos -arch arm64 -o "$dsym" -l 0x100000000 "$address"
+          done
