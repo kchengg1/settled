@@ -5,6 +5,10 @@ name: Symbolicate a crash
 # UUID matches the crash report's slice_uuid, the build is identical to the
 # one that crashed and the functions are exact.
 on:
+  # GitHub only offers "Run workflow" for a workflow it has seen run; this
+  # push trigger registers it from a branch. The job itself skips pushes.
+  push:
+    paths: [.github/workflows/symbolicate.yml]
   workflow_dispatch:
     inputs:
       ref:
@@ -20,6 +24,7 @@ on:
 jobs:
   symbolicate:
     name: Rebuild and symbolicate
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
