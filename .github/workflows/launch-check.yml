@@ -1,0 +1,152 @@
+name: Launch check
+
+# The CI build is unsigned, so it carries no entitlements, and code that
+# only misbehaves with iCloud turned on never runs there. Both TestFlight
+# launch crashes were that kind. This builds the Release app for the
+# simulator signed to run locally, which embeds the real entitlements,
+# launches it, and fails if it doesn't stay up, printing the crash report.
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag, or commit to check (defaults to the one selected above)
+        required: false
+      upgrade_from:
+        description: >-
+          Optional earlier ref to install and open first, so the checked
+          build is launched as an upgrade over that build's data
+        required: false
+
+jobs:
+  launch:
+    name: Launch with entitlements (simulator)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen
+
+      - name: Boot a simulator
+        id: sim
+        run: |
+          pick() {
+            xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          phones = [d for runtime, ds in sorted(devices.items()) if "iOS" in runtime
+                    for d in ds if d["name"].startswith("iPhone")]
+          print(phones[-1]["udid"] if phones else "")'
+          }
+          UDID="$(pick)"
+          if [ -z "$UDID" ]; then
+            echo "No iPhone simulators installed; downloading the iOS platform"
+            xcodebuild -downloadPlatform iOS
+            UDID="$(pick)"
+          fi
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      # An upgrade keeps the app's data container, so whatever the earlier
+      # build left behind (even if it crashed) is what the new one opens.
+      - name: Install and open the earlier build (upgrade check)
+        if: inputs.upgrade_from != ''
+        run: |
+          udid=${{ steps.sim.outputs.udid }}
+          git fetch --depth 1 origin "${{ inputs.upgrade_from }}"
+          git worktree add previous FETCH_HEAD
+          (cd previous && xcodegen)
+          xcodebuild -project previous/Settled.xcodeproj -scheme Settled \
+            -configuration Release \
+            -destination "platform=iOS Simulator,id=$udid" \
+            -derivedDataPath build-previous \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
+            build -quiet
+          xcrun simctl install "$udid" build-previous/Build/Products/Release-iphonesimulator/Settled.app
+          xcrun simctl launch "$udid" com.kchengg1.settled
+          sleep 20
+          xcrun simctl terminate "$udid" com.kchengg1.settled 2>/dev/null || true
+          echo "Files the earlier build left behind:"
+          data="$(xcrun simctl get_app_container "$udid" com.kchengg1.settled data)"
+          find "$data/Library" -maxdepth 3 -type f -exec ls -l {} + 2>/dev/null || true
+          # Its crash is expected; keep only the checked build's reports.
+          rm -f ~/Library/Logs/DiagnosticReports/Settled*.ips
+
+      - name: Build Release, signed to run locally
+        run: |
+          xcodebuild -project Settled.xcodeproj -scheme Settled \
+            -configuration Release \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
+            build
+
+      - name: Show the entitlements the app runs with
+        run: |
+          app=build/Build/Products/Release-iphonesimulator/Settled.app
+          # Simulator builds carry their entitlements in a Mach-O section.
+          otool -X -s __TEXT __entitlements "$app/Settled" | xxd -r -p 2>/dev/null \
+            || codesign -d --entitlements - "$app" \
+            || echo "(none found)"
+
+      - name: Launch and stay up for 30 seconds
+        run: |
+          udid=${{ steps.sim.outputs.udid }}
+          xcrun simctl install "$udid" build/Build/Products/Release-iphonesimulator/Settled.app
+          out="$(xcrun simctl launch "$udid" com.kchengg1.settled)"
+          echo "$out"
+          pid="${out##*: }"
+          sleep 30
+          if kill -0 "$pid" 2>/dev/null; then
+            echo "Settled is still running after 30 seconds."
+          else
+            echo "::error::Settled exited within 30 seconds of launch."
+            exit 1
+          fi
+
+      - name: Crash report and app log (on failure)
+        if: failure()
+        run: |
+          udid=${{ steps.sim.outputs.udid }}
+          echo "=== App log ==="
+          xcrun simctl spawn "$udid" log show --last 3m --style compact \
+            --predicate 'process == "Settled"' | tail -80 || true
+          echo
+          echo "=== Crash reports ==="
+          found=0
+          for report in ~/Library/Logs/DiagnosticReports/Settled*.ips; do
+            [ -f "$report" ] || continue
+            found=1
+            echo "--- $report"
+            python3 - "$report" <<'PY'
+          import json, sys
+          text = open(sys.argv[1]).read()
+          header, _, body = text.partition("\n")
+          report = json.loads(body)
+          for key in ("exception", "termination", "asi", "ktriageinfo"):
+              if key in report:
+                  print(f"{key}: {json.dumps(report[key], indent=1)}")
+          images = report.get("usedImages", [])
+          threads = report.get("threads", [])
+          crashed = next((t for t in threads if t.get("triggered")), threads[0] if threads else None)
+          if crashed:
+              print("Crashed thread:")
+              for i, frame in enumerate(crashed.get("frames", [])[:40]):
+                  image = images[frame["imageIndex"]].get("name", "?") if frame.get("imageIndex", -1) < len(images) else "?"
+                  symbol = frame.get("symbol", hex(frame.get("imageOffset", 0)))
+                  where = f' ({frame["sourceFile"]}:{frame.get("sourceLine", "?")})' if "sourceFile" in frame else ""
+                  print(f"  {i:2} {image:28} {symbol}{where}")
+          PY
+          done
+          [ "$found" = 1 ] || echo "(no crash report written)"
