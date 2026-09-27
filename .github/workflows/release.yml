@@ -1,7 +1,7 @@
 name: Release to TestFlight
 
 # Manual trigger (Actions tab → Release to TestFlight → Run workflow),
-# or push a tag like v0.1.0.
+# or push a tag like v1.0.
 on:
   workflow_dispatch:
   push:
@@ -53,6 +53,19 @@ jobs:
             CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
 
+      # App Store Connect rejects a reused build number only after the whole
+      # upload, so catch an Info.plist that ignores the override here.
+      - name: Check the archive's build number
+        run: |
+          plist=build/Settled.xcarchive/Products/Applications/Settled.app/Info.plist
+          version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")
+          build=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")
+          echo "Archived Settled $version ($build)"
+          if [ "$build" != "${{ github.run_number }}" ]; then
+            echo "::error::Archive has build number $build, expected ${{ github.run_number }}"
+            exit 1
+          fi
+
       - name: Write export options
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -85,3 +98,37 @@ jobs:
             -authenticationKeyPath "$PWD/private_keys/AuthKey.p8" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      # A signing failure names the mismatched entitlement but not what Apple
+      # actually granted. On failure, print both sides so the fix is plain:
+      # the entitlements the app requests, and what each downloaded profile
+      # allows.
+      - name: Show signing inputs (on failure)
+        if: failure()
+        run: |
+          echo "=== Entitlements the app requests ==="
+          cat Settled.entitlements || echo "(not generated)"
+          echo
+          echo "=== Provisioning profiles Xcode downloaded ==="
+          found=0
+          while IFS= read -r f; do
+            found=1
+            security cms -D -i "$f" > /tmp/profile.plist 2>/dev/null || continue
+            echo "--- $(/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile.plist 2>/dev/null)"
+            plutil -p /tmp/profile.plist \
+              | grep -E -A4 '"(application-identifier|com\.apple\.developer\.icloud[^"]*)"' \
+              || echo "    (grants no iCloud entitlements)"
+          done < <(find ~/Library -name '*.mobileprovision' 2>/dev/null)
+          [ "$found" = 1 ] || echo "(no profiles found)"
+
+      # Each runner gets a new "Created via API" development certificate
+      # whose private key vanishes with the machine. Revoke it so they don't
+      # pile up to Apple's limit, which blocks archiving. Runs even after a
+      # failure, since a failed archive can still have made one.
+      - name: Revoke this run's development certificate
+        if: always()
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_PATH: private_keys/AuthKey.p8
+        run: python3 .github/scripts/revoke_run_certificates.py

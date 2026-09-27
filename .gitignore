@@ -13,3 +13,6 @@ Package.resolved
 
 # macOS
 .DS_Store
+
+# Python bytecode (release scripts)
+__pycache__/

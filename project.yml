@@ -25,6 +25,10 @@ targets:
     info:
       path: Settled-Info.plist
       properties:
+        # XcodeGen otherwise writes fixed 1.0 (1) here, ignoring the build
+        # settings, so every upload would reuse build 1 and be rejected.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Standard Apple frameworks only (HTTPS-level crypto) — exempt, so
         # TestFlight skips the export-compliance question on every build.
         ITSAppUsesNonExemptEncryption: false
@@ -44,6 +48,8 @@ targets:
             CFBundleTypeRole: Editor
             LSHandlerRank: Owner
             LSItemContentTypes: [com.kchengg1.settled.group]
+        # Imported group files are copied into the app, never edited in place.
+        LSSupportsOpeningDocumentsInPlace: false
         # Required to accept an invitation to a group shared through iCloud.
         CKSharingSupported: true
     # Live group sharing runs on the user's own iCloud. The container must
@@ -61,7 +67,7 @@ targets:
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
         CURRENT_PROJECT_VERSION: 1
-        MARKETING_VERSION: 0.1.0
+        MARKETING_VERSION: "1.0"
 
   SettledUITests:
     type: bundle.ui-testing
